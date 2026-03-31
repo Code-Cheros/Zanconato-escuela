@@ -1,0 +1,83 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id         String     @id @default(cuid())
+  nombre     String
+  email      String     @unique
+  password   String
+  rol        Rol        @default(COLECTOR)
+  activo     Boolean    @default(true)
+  creadoEn   DateTime   @default(now())
+  estudiante Estudiante?
+}
+
+enum Rol {
+  COLECTOR
+  MATRICULA
+  ADMINISTRATIVO
+}
+
+model Estudiante {
+  id         String      @id @default(cuid())
+  nombre     String
+  nie        String      @unique
+  grado      String
+  seccion    String
+  encargado  String?
+  telefono   String?
+  usuarioId  String?     @unique
+  usuario    Usuario?    @relation(fields: [usuarioId], references: [id])
+  pagos      Pago[]
+  talonarios Talonario[]
+  creadoEn   DateTime    @default(now())
+}
+
+model Talonario {
+  id           String        @id @default(cuid())
+  estudianteId String
+  estudiante   Estudiante    @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  anio         Int
+  comprobantes Comprobante[]
+  creadoEn     DateTime      @default(now())
+}
+
+model Comprobante {
+  id          String    @id @default(cuid())
+  talonarioId String
+  talonario   Talonario @relation(fields: [talonarioId], references: [id], onDelete: Cascade)
+  tipo        TipoPago
+  mes         String?
+  monto       Float
+  pagado      Boolean   @default(false)
+  fechaPago   DateTime?
+  orden       Int       @default(0)
+  pago        Pago?
+}
+
+model Pago {
+  id            String      @id @default(cuid())
+  estudianteId  String
+  estudiante    Estudiante  @relation(fields: [estudianteId], references: [id])
+  comprobanteId String      @unique
+  comprobante   Comprobante @relation(fields: [comprobanteId], references: [id])
+  monto         Float
+  tipo          TipoPago
+  fecha         DateTime    @default(now())
+  registradoPor String
+  notas         String?
+}
+
+enum TipoPago {
+  MATRICULA
+  PAPELERIA
+  COLEGIATURA
+  ALIMENTACION
+}
