@@ -12,6 +12,13 @@ export async function GET(req: NextRequest) {
   const fecha = searchParams.get('fecha')
   const tipo = searchParams.get('tipo')
   const estudianteId = searchParams.get('estudianteId')
+  const nombre = searchParams.get('nombre')
+  const nie = searchParams.get('nie')
+  const grado = searchParams.get('grado')
+  const seccion = searchParams.get('seccion')
+  const encargado = searchParams.get('encargado')
+  const telefono = searchParams.get('telefono')
+  const estado = searchParams.get('estado')
 
   let fechaInicio: Date | undefined
   let fechaFin: Date | undefined
@@ -22,11 +29,60 @@ export async function GET(req: NextRequest) {
     fechaFin.setHours(23, 59, 59, 999)
   }
 
+  const anioActual = new Date().getFullYear()
+
   const pagos = await prisma.pago.findMany({
     where: {
       ...(fechaInicio && fechaFin && { fecha: { gte: fechaInicio, lte: fechaFin } }),
       ...(tipo && { tipo: tipo as any }),
       ...(estudianteId && { estudianteId }),
+      estudiante: {
+        ...(nombre && { nombre: { contains: nombre, mode: 'insensitive' } }),
+        ...(nie && { nie: { contains: nie, mode: 'insensitive' } }),
+        ...(grado && { grado: { contains: grado, mode: 'insensitive' } }),
+        ...(seccion && { seccion: { contains: seccion, mode: 'insensitive' } }),
+        ...(encargado && { encargado: { contains: encargado, mode: 'insensitive' } }),
+        ...(telefono && { telefono: { contains: telefono, mode: 'insensitive' } }),
+        ...(estado === 'AL_DIA' && {
+          talonarios: {
+            some: {
+              anio: anioActual,
+              comprobantes: {
+                none: { tipo: 'COLEGIATURA', pagado: false },
+                some: { tipo: 'COLEGIATURA' }
+              }
+            }
+          }
+        }),
+        ...(estado === 'PENDIENTE' && {
+          talonarios: {
+            some: {
+              anio: anioActual,
+              comprobantes: {
+                every: { tipo: 'COLEGIATURA', pagado: false },
+                some: { tipo: 'COLEGIATURA' }
+              }
+            }
+          }
+        }),
+        ...(estado === 'INCOMPLETO' && {
+          talonarios: {
+            some: {
+              anio: anioActual,
+              comprobantes: {
+                some: { AND: [{ tipo: 'COLEGIATURA' }, { pagado: true }] }
+              },
+              AND: [
+                {
+                  comprobantes: {
+                    some: { AND: [{ tipo: 'COLEGIATURA' }, { pagado: false }] }
+                  }
+                }
+              ]
+            }
+          }
+        }),
+      }
     },
     include: {
       estudiante: true,
@@ -67,7 +123,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Comprobante ya fue pagado' }, { status: 409 })
     }
 
-    const pago = await prisma.$transaction(async (tx) => {
+    const pago = await prisma.$transaction(async (tx: any) => {
       const p = await tx.pago.create({
         data: {
           estudianteId,
