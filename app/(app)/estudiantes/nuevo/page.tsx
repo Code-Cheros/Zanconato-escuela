@@ -7,6 +7,17 @@ import { ArrowLeft, Save, UserPlus } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { GRADOS, SECCIONES } from '@/lib/utils'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export default function NuevoEstudiantePage() {
   const router = useRouter()
@@ -20,8 +31,12 @@ export default function NuevoEstudiantePage() {
     telefono: '',
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  const handleSelect = (field: keyof typeof form) => (value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,140 +70,136 @@ export default function NuevoEstudiantePage() {
     <div className="flex flex-col h-full">
       <Header title="Matricular Estudiante" subtitle="Registro de nuevo estudiante" />
 
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-4 sm:p-6">
         <div className="max-w-2xl mx-auto">
-          <Link href="/estudiantes" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-6 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Volver a estudiantes
-          </Link>
+          <Button variant="ghost" size="sm" className="mb-6 gap-1.5 px-0 text-muted-foreground hover:text-foreground" asChild>
+            <Link href="/estudiantes">
+              <ArrowLeft className="size-4" />
+              Volver a estudiantes
+            </Link>
+          </Button>
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-xs">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <UserPlus className="w-4 h-4 text-blue-600" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-gray-900">Datos del Estudiante</h2>
-                <p className="text-xs text-gray-500">Se creará automáticamente un talonario para el año actual</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Nombre Completo <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="nombre"
-                    value={form.nombre}
-                    onChange={handleChange}
-                    placeholder="Nombre y apellidos del estudiante"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
+          <Card>
+            <CardHeader className="border-b">
+              <div className="flex items-center gap-3">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <UserPlus className="size-4" />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    NIE <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="nie"
-                    value={form.nie}
-                    onChange={handleChange}
-                    placeholder="Número de identificación"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Grado <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="grado"
-                    value={form.grado}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white"
-                    required
-                  >
-                    <option value="">Seleccionar grado</option>
-                    {GRADOS.map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Sección <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="seccion"
-                    value={form.seccion}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white"
-                    required
-                  >
-                    <option value="">Seleccionar sección</option>
-                    {SECCIONES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Encargado / Padre de familia
-                  </label>
-                  <input
-                    type="text"
-                    name="encargado"
-                    value={form.encargado}
-                    onChange={handleChange}
-                    placeholder="Nombre del encargado"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Teléfono de contacto
-                  </label>
-                  <input
-                    type="tel"
-                    name="telefono"
-                    value={form.telefono}
-                    onChange={handleChange}
-                    placeholder="7000-0000"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                  />
+                  <CardTitle className="text-base">Datos del Estudiante</CardTitle>
+                  <CardDescription>Se creará automáticamente un talonario para el año actual</CardDescription>
                 </div>
               </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <Label htmlFor="nombre">
+                      Nombre Completo <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="nombre"
+                      name="nombre"
+                      value={form.nombre}
+                      onChange={handleChange}
+                      placeholder="Nombre y apellidos del estudiante"
+                      required
+                    />
+                  </div>
 
-              <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-700">
-                <p className="font-medium mb-1">Al guardar se generará automáticamente:</p>
-                <ul className="space-y-1 text-xs">
-                  <li>• Usuario temporal con email: estudiante.{form.nie?.toLowerCase() || 'nie'}@zaconato.edu.sv</li>
-                  <li>• Talonario del año {new Date().getFullYear()} con todos los comprobantes</li>
-                  <li>• Comprobantes: Matrícula, Papelería, 10 Colegiaturas, 10 Alimentaciones</li>
-                </ul>
-              </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="nie">
+                      NIE <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="nie"
+                      name="nie"
+                      value={form.nie}
+                      onChange={handleChange}
+                      placeholder="Número de identificación"
+                      className="font-mono"
+                      required
+                    />
+                  </div>
 
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium px-6 py-2.5 rounded-lg transition-colors text-sm"
-                >
-                  <Save className="w-4 h-4" />
-                  {loading ? 'Guardando...' : 'Guardar Matrícula'}
-                </button>
-                <Link href="/estudiantes" className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
-                  Cancelar
-                </Link>
-              </div>
-            </form>
-          </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="grado">
+                      Grado <span className="text-destructive">*</span>
+                    </Label>
+                    <Select value={form.grado} onValueChange={handleSelect('grado')} required>
+                      <SelectTrigger id="grado" className="w-full">
+                        <SelectValue placeholder="Seleccionar grado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GRADOS.map(g => (
+                          <SelectItem key={g} value={g}>{g}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="seccion">
+                      Sección <span className="text-destructive">*</span>
+                    </Label>
+                    <Select value={form.seccion} onValueChange={handleSelect('seccion')} required>
+                      <SelectTrigger id="seccion" className="w-full">
+                        <SelectValue placeholder="Seleccionar sección" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SECCIONES.map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="encargado">Encargado / Padre de familia</Label>
+                    <Input
+                      id="encargado"
+                      name="encargado"
+                      value={form.encargado}
+                      onChange={handleChange}
+                      placeholder="Nombre del encargado"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="telefono">Teléfono de contacto</Label>
+                    <Input
+                      id="telefono"
+                      name="telefono"
+                      type="tel"
+                      value={form.telefono}
+                      onChange={handleChange}
+                      placeholder="7000-0000"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-primary">
+                  <p className="font-medium mb-1">Al guardar se generará automáticamente:</p>
+                  <ul className="space-y-1 text-xs text-primary/80">
+                    <li>• Usuario temporal con email: estudiante.{form.nie?.toLowerCase() || 'nie'}@zaconato.edu.sv</li>
+                    <li>• Talonario del año {new Date().getFullYear()} con todos los comprobantes</li>
+                    <li>• Comprobantes: Matrícula, Papelería, 10 Colegiaturas, 10 Alimentaciones</li>
+                  </ul>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <Button type="submit" disabled={loading}>
+                    <Save className="size-4" />
+                    {loading ? 'Guardando...' : 'Guardar Matrícula'}
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link href="/estudiantes">Cancelar</Link>
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

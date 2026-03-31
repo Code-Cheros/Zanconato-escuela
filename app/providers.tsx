@@ -2,11 +2,14 @@
 'use client'
 import { SessionProvider } from 'next-auth/react'
 import { Toaster } from 'react-hot-toast'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      {children}
+      <TooltipProvider delayDuration={0}>
+        {children}
+      </TooltipProvider>
       <Toaster
         position="top-right"
         toastOptions={{
@@ -19,3 +22,4 @@ export function Providers({ children }: { children: React.ReactNode }) {
     </SessionProvider>
   )
 }
+

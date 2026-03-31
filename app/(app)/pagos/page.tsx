@@ -3,10 +3,40 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Header from '@/components/layout/Header'
-import { Plus, Filter, X } from 'lucide-react'
+import { Plus, X, CreditCard } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { formatCurrency, formatDate, TIPO_PAGO_LABELS } from '@/lib/utils'
 import { useSession } from 'next-auth/react'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter as TableFoot,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty'
+import { cn } from '@/lib/utils'
 
 interface Pago {
   id: string
@@ -32,6 +62,15 @@ interface Talonario {
   comprobantes: Comprobante[]
 }
 
+const typeBadgeClass: Record<string, string> = {
+  COLEGIATURA: 'border-blue-200 bg-blue-50 text-blue-700',
+  ALIMENTACION: 'border-green-200 bg-green-50 text-green-700',
+  MATRICULA: 'border-amber-200 bg-amber-50 text-amber-700',
+  PAPELERIA: 'border-purple-200 bg-purple-50 text-purple-700',
+}
+
+const TIPO_PAGO_OPTIONS: Record<string, string> = TIPO_PAGO_LABELS
+
 export default function PagosPage() {
   const { data: session } = useSession()
   const rol = (session?.user as any)?.rol
@@ -43,7 +82,6 @@ export default function PagosPage() {
   const [filterFecha, setFilterFecha] = useState('')
   const [filterTipo, setFilterTipo] = useState('')
 
-  // Form state
   const [nie, setNie] = useState('')
   const [estudiante, setEstudiante] = useState<any>(null)
   const [talonarios, setTalonarios] = useState<Talonario[]>([])
@@ -101,11 +139,7 @@ export default function PagosPage() {
       const res = await fetch('/api/pagos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          estudianteId: estudiante.id,
-          comprobanteId: selectedComprobante,
-          notas,
-        }),
+        body: JSON.stringify({ estudianteId: estudiante.id, comprobanteId: selectedComprobante, notas }),
       })
       const data = await res.json()
       if (res.ok) {
@@ -131,195 +165,201 @@ export default function PagosPage() {
     <div className="flex flex-col h-full">
       <Header title="Gestionar Pagos" subtitle="Registro y seguimiento de pagos" />
 
-      <div className="flex-1 p-6 space-y-5">
-        {/* Controls */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <input
+      <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-5">
+        {/* Filter bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
               type="date"
               value={filterFecha}
               onChange={e => setFilterFecha(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+              className="w-auto"
             />
-            <select
-              value={filterTipo}
-              onChange={e => setFilterTipo(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              <option value="">Todos los tipos</option>
-              {Object.entries(TIPO_PAGO_LABELS).map(([v, l]) => (
-                <option key={v} value={v}>{l}</option>
-              ))}
-            </select>
+            <Select value={filterTipo || 'all'} onValueChange={v => setFilterTipo(v === 'all' ? '' : v)}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Todos los tipos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los tipos</SelectItem>
+                {Object.entries(TIPO_PAGO_OPTIONS).map(([v, l]) => (
+                  <SelectItem key={v} value={v}>{l}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {(filterFecha || filterTipo) && (
-              <button onClick={() => { setFilterFecha(''); setFilterTipo('') }}
-                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800">
-                <X className="w-4 h-4" /> Limpiar
-              </button>
+              <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground" onClick={() => { setFilterFecha(''); setFilterTipo('') }}>
+                <X className="size-4" /> Limpiar
+              </Button>
             )}
           </div>
           {(rol === 'COLECTOR' || rol === 'ADMINISTRATIVO') && (
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Registrar Pago
-            </button>
+            <Button onClick={() => setShowForm(!showForm)}>
+              <Plus className="size-4" /> Registrar Pago
+            </Button>
           )}
         </div>
 
         {/* Payment form */}
         {showForm && (rol === 'COLECTOR' || rol === 'ADMINISTRATIVO') && (
-          <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Registrar Nuevo Pago</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">NIE del Estudiante</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={nie}
-                    onChange={e => setNie(e.target.value)}
-                    placeholder="Ej: 123456789"
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button onClick={buscarEstudiante}
-                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors">
-                    Buscar
-                  </button>
+          <Card>
+            <CardHeader className="border-b pb-4">
+              <CardTitle className="text-base">Registrar Nuevo Pago</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {/* NIE search */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="nie-pago">NIE del Estudiante</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="nie-pago"
+                      value={nie}
+                      onChange={e => setNie(e.target.value)}
+                      placeholder="Ej: 123456789"
+                      className="flex-1 font-mono"
+                      onKeyDown={e => e.key === 'Enter' && buscarEstudiante()}
+                    />
+                    <Button variant="secondary" type="button" onClick={buscarEstudiante}>
+                      Buscar
+                    </Button>
+                  </div>
+                  {estudiante && (
+                    <p className="text-xs text-emerald-600 font-medium">✓ {estudiante.nombre}</p>
+                  )}
                 </div>
-                {estudiante && (
-                  <p className="text-xs text-emerald-600 mt-1 font-medium">✓ {estudiante.nombre}</p>
+
+                {/* Talonario select */}
+                {talonarios.length > 0 && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="talonario-select">Talonario</Label>
+                    <Select
+                      value={selectedTalonario}
+                      onValueChange={v => { setSelectedTalonario(v); setSelectedComprobante('') }}
+                    >
+                      <SelectTrigger id="talonario-select" className="w-full">
+                        <SelectValue placeholder="Seleccionar año" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {talonarios.map(t => (
+                          <SelectItem key={t.id} value={t.id}>Talonario {t.anio}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
-              </div>
 
-              {talonarios.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Talonario</label>
-                  <select
-                    value={selectedTalonario}
-                    onChange={e => { setSelectedTalonario(e.target.value); setSelectedComprobante('') }}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
-                    <option value="">Seleccionar año</option>
-                    {talonarios.map(t => (
-                      <option key={t.id} value={t.id}>Talonario {t.anio}</option>
-                    ))}
-                  </select>
+                {/* Comprobante select */}
+                {comprobantesDisponibles.length > 0 && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="comprobante-select">Comprobante</Label>
+                    <Select value={selectedComprobante} onValueChange={setSelectedComprobante}>
+                      <SelectTrigger id="comprobante-select" className="w-full">
+                        <SelectValue placeholder="Seleccionar comprobante" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {comprobantesDisponibles.map(c => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {TIPO_PAGO_LABELS[c.tipo]}{c.mes ? ` - ${c.mes}` : ''} (${c.monto.toFixed(2)})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Notes */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="notas-pago">Notas (opcional)</Label>
+                  <Input
+                    id="notas-pago"
+                    value={notas}
+                    onChange={e => setNotas(e.target.value)}
+                    placeholder="Observaciones..."
+                  />
                 </div>
-              )}
-
-              {comprobantesDisponibles.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Comprobante</label>
-                  <select
-                    value={selectedComprobante}
-                    onChange={e => setSelectedComprobante(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
-                    <option value="">Seleccionar comprobante</option>
-                    {comprobantesDisponibles.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {TIPO_PAGO_LABELS[c.tipo]}{c.mes ? ` - ${c.mes}` : ''} (${c.monto.toFixed(2)})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">Notas (opcional)</label>
-                <input
-                  type="text"
-                  value={notas}
-                  onChange={e => setNotas(e.target.value)}
-                  placeholder="Observaciones..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                />
               </div>
-            </div>
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={handleRegistrarPago}
-                disabled={savingPago || !selectedComprobante}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium px-5 py-2 rounded-lg text-sm transition-colors"
-              >
+            </CardContent>
+            <CardFooter className="gap-3 border-t pt-4">
+              <Button onClick={handleRegistrarPago} disabled={savingPago || !selectedComprobante}>
                 {savingPago ? 'Guardando...' : 'Confirmar Pago'}
-              </button>
-              <button
-                onClick={() => setShowForm(false)}
-                className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
+              </Button>
+              <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
+            </CardFooter>
+          </Card>
         )}
 
         {/* Payments table */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-xs">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="font-semibold text-gray-900">Historial de Pagos</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50">
-                  {['Estudiante', 'NIE', 'Tipo', 'Mes', 'Monto', 'Fecha', 'Notas'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {loading ? (
-                  [...Array(5)].map((_, i) => (
-                    <tr key={i}>
-                      {[...Array(7)].map((_, j) => (
-                        <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded animate-pulse" /></td>
-                      ))}
-                    </tr>
-                  ))
-                ) : pagos.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-gray-400 text-sm">
-                      No hay pagos para los filtros seleccionados
-                    </td>
-                  </tr>
-                ) : (
-                  pagos.map((p) => (
-                    <tr key={p.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.estudiante.nombre}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 font-mono">{p.estudiante.nie}</td>
-                      <td className="px-4 py-3 text-sm">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                          p.tipo === 'COLEGIATURA' ? 'bg-blue-100 text-blue-700' :
-                          p.tipo === 'ALIMENTACION' ? 'bg-green-100 text-green-700' :
-                          p.tipo === 'MATRICULA' ? 'bg-amber-100 text-amber-700' :
-                          'bg-purple-100 text-purple-700'
-                        }`}>
-                          {TIPO_PAGO_LABELS[p.tipo]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{p.comprobante?.mes || '—'}</td>
-                      <td className="px-4 py-3 text-sm font-semibold text-emerald-600">{formatCurrency(p.monto)}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{formatDate(p.fecha)}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{p.notas || '—'}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          {pagos.length > 0 && (
-            <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-              <span>{pagos.length} pago{pagos.length !== 1 ? 's' : ''}</span>
-              <span className="font-semibold text-gray-700">
-                Total: {formatCurrency(pagos.reduce((sum, p) => sum + p.monto, 0))}
-              </span>
-            </div>
-          )}
-        </div>
+        <Card className="py-0">
+          <CardHeader className="border-b px-6 py-4">
+            <CardTitle className="text-base">Historial de Pagos</CardTitle>
+          </CardHeader>
+
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                {['Estudiante', 'NIE', 'Tipo', 'Mes', 'Monto', 'Fecha', 'Notas'].map(h => (
+                  <TableHead key={h} className="px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {h}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                [...Array(5)].map((_, i) => (
+                  <TableRow key={i}>
+                    {[...Array(7)].map((_, j) => (
+                      <TableCell key={j} className="px-4 py-3">
+                        <Skeleton className="h-4 w-full max-w-[8rem]" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : pagos.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="p-0">
+                    <Empty className="min-h-[12rem] rounded-none border-0">
+                      <EmptyHeader>
+                        <EmptyMedia variant="icon"><CreditCard /></EmptyMedia>
+                        <EmptyTitle>No hay pagos</EmptyTitle>
+                        <EmptyDescription>No se encontraron pagos para los filtros seleccionados.</EmptyDescription>
+                      </EmptyHeader>
+                    </Empty>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                pagos.map(p => (
+                  <TableRow key={p.id}>
+                    <TableCell className="px-4 py-3 font-medium">{p.estudiante.nombre}</TableCell>
+                    <TableCell className="px-4 py-3 font-mono text-muted-foreground">{p.estudiante.nie}</TableCell>
+                    <TableCell className="px-4 py-3">
+                      <Badge className={cn('border', typeBadgeClass[p.tipo] || '')}>
+                        {TIPO_PAGO_LABELS[p.tipo]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-muted-foreground">{p.comprobante?.mes || '—'}</TableCell>
+                    <TableCell className="px-4 py-3 font-semibold text-emerald-600 tabular-nums">{formatCurrency(p.monto)}</TableCell>
+                    <TableCell className="px-4 py-3 text-muted-foreground">{formatDate(p.fecha)}</TableCell>
+                    <TableCell className="px-4 py-3 text-muted-foreground">{p.notas || '—'}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+            {pagos.length > 0 && (
+              <TableFoot>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableCell colSpan={4} className="px-4 py-3 text-xs text-muted-foreground">
+                    {pagos.length} pago{pagos.length !== 1 ? 's' : ''}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 font-bold text-emerald-600 tabular-nums">
+                    {formatCurrency(pagos.reduce((sum, p) => sum + p.monto, 0))}
+                  </TableCell>
+                  <TableCell colSpan={2} />
+                </TableRow>
+              </TableFoot>
+            )}
+          </Table>
+        </Card>
       </div>
     </div>
   )
