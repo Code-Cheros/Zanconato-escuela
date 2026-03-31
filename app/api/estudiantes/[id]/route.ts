@@ -41,6 +41,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const body = await req.json()
     const { nombre, nie, grado, seccion, encargado, telefono } = body
 
+    if (nie && !/^\d{8}$/.test(nie)) {
+      return NextResponse.json({ error: 'El NIE debe tener exactamente 8 dígitos numéricos' }, { status: 400 })
+    }
+
     const estudiante = await prisma.estudiante.update({
       where: { id },
       data: { nombre, nie, grado, seccion, encargado, telefono },

@@ -32,7 +32,15 @@ export default function NuevoEstudiantePage() {
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    if (name === 'nie') {
+      const onlyNums = value.replace(/[^0-9]/g, '')
+      if (onlyNums.length <= 8) {
+        setForm({ ...form, nie: onlyNums })
+      }
+      return
+    }
+    setForm({ ...form, [name]: value })
   }
 
   const handleSelect = (field: keyof typeof form) => (value: string) => {
@@ -45,6 +53,12 @@ export default function NuevoEstudiantePage() {
       toast.error('Nombre, NIE, Grado y Sección son requeridos')
       return
     }
+
+    if (form.nie.length !== 8) {
+      toast.error('El NIE debe tener exactamente 8 dígitos')
+      return
+    }
+
     setLoading(true)
     try {
       const res = await fetch('/api/estudiantes', {
@@ -110,15 +124,17 @@ export default function NuevoEstudiantePage() {
 
                   <div className="space-y-1.5">
                     <Label htmlFor="nie">
-                      NIE <span className="text-destructive">*</span>
+                      NIE (8 dígitos) <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="nie"
                       name="nie"
                       value={form.nie}
                       onChange={handleChange}
-                      placeholder="Número de identificación"
+                      placeholder="Ej: 12345678"
                       className="font-mono"
+                      maxLength={8}
+                      inputMode="numeric"
                       required
                     />
                   </div>
