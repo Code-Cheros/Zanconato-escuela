@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { BookOpen, Lock, Mail, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -98,6 +99,14 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   required
                 />
+              </div>
+              <div className="flex justify-end mt-1.5">
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-xs text-blue-600 hover:underline font-medium"
+                >
+                  ¿Olvidaste tu contraseña?
+                </Link>
               </div>
             </div>
 
