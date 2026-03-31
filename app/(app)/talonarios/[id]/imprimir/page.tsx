@@ -6,6 +6,7 @@ import { Printer, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { TIPO_PAGO_LABELS, formatCurrency } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 interface Comprobante {
   id: string
@@ -30,17 +31,15 @@ interface Talonario {
   comprobantes: Comprobante[]
 }
 
-function ComprobanteCard({ comp, estudiante, anio }: { comp: Comprobante; estudiante: any; anio: number }) {
+function ComprobanteCard({ comp, estudiante, anio }: { comp: Comprobante; estudiante: Talonario['estudiante']; anio: number }) {
   return (
     <div className="border-2 border-gray-800 p-4 rounded relative" style={{ minHeight: '180px' }}>
-      {/* Header */}
       <div className="text-center border-b border-gray-300 pb-2 mb-3">
         <p className="font-bold text-sm uppercase tracking-wide">Complejo Educativo Católico</p>
         <p className="font-bold text-base uppercase tracking-widest text-blue-800">ZACONATO</p>
         <p className="text-xs text-gray-500">Año Lectivo {anio}</p>
       </div>
 
-      {/* Tipo badge */}
       <div className={`absolute top-3 right-3 text-xs font-bold px-2 py-0.5 rounded ${
         comp.tipo === 'MATRICULA' ? 'bg-amber-100 text-amber-800' :
         comp.tipo === 'PAPELERIA' ? 'bg-purple-100 text-purple-800' :
@@ -50,7 +49,6 @@ function ComprobanteCard({ comp, estudiante, anio }: { comp: Comprobante; estudi
         {TIPO_PAGO_LABELS[comp.tipo]}
       </div>
 
-      {/* Data */}
       <div className="space-y-1.5 text-xs">
         <div className="flex justify-between">
           <span className="text-gray-500">Estudiante:</span>
@@ -76,18 +74,14 @@ function ComprobanteCard({ comp, estudiante, anio }: { comp: Comprobante; estudi
         </div>
       </div>
 
-      {/* Status stamp */}
       {comp.pagado && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="border-4 border-emerald-500 text-emerald-500 rounded-full w-20 h-20 flex items-center justify-center rotate-[-20deg] opacity-40">
-            <span className="font-black text-xs uppercase text-center leading-tight">
-              PAGADO
-            </span>
+            <span className="font-black text-xs uppercase text-center leading-tight">PAGADO</span>
           </div>
         </div>
       )}
 
-      {/* Footer */}
       <div className="absolute bottom-2 left-4 right-4 flex justify-between text-[9px] text-gray-400">
         <span>Firma: _______________</span>
         <span>Sello</span>
@@ -110,10 +104,9 @@ export default function ImprimirTalonarioPage() {
 
   const handlePrint = () => window.print()
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen">Cargando...</div>
-  if (!talonario || (talonario as any).error) return <div className="p-8 text-center text-gray-400">No encontrado</div>
+  if (loading) return <div className="flex items-center justify-center min-h-screen text-muted-foreground">Cargando...</div>
+  if (!talonario || (talonario as any).error) return <div className="p-8 text-center text-muted-foreground">No encontrado</div>
 
-  // Group into pages of 4
   const comps = [...talonario.comprobantes].sort((a, b) => a.orden - b.orden)
   const pages: Comprobante[][] = []
   for (let i = 0; i < comps.length; i += 4) {
@@ -122,40 +115,37 @@ export default function ImprimirTalonarioPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Controls - hidden on print */}
-      <div className="no-print bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+      {/* Controls bar - hidden on print */}
+      <div className="no-print sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-4 py-3 shadow-xs sm:px-6">
         <div className="flex items-center gap-3">
-          <Link href={`/talonarios/${id}`} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Volver
-          </Link>
-          <span className="text-gray-300">|</span>
+          <Button variant="ghost" size="sm" className="gap-1.5 px-0 text-muted-foreground hover:text-foreground" asChild>
+            <Link href={`/talonarios/${id}`}>
+              <ArrowLeft className="size-4" /> Volver
+            </Link>
+          </Button>
+          <span className="text-border">|</span>
           <div>
-            <p className="text-sm font-semibold text-gray-900">{talonario.estudiante.nombre}</p>
-            <p className="text-xs text-gray-500">Talonario {talonario.anio} · {comps.length} comprobantes</p>
+            <p className="text-sm font-semibold">{talonario.estudiante.nombre}</p>
+            <p className="text-xs text-muted-foreground">Talonario {talonario.anio} · {comps.length} comprobantes</p>
           </div>
         </div>
-        <button
-          onClick={handlePrint}
-          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          <Printer className="w-4 h-4" />
+        <Button onClick={handlePrint}>
+          <Printer className="size-4" />
           Imprimir
-        </button>
+        </Button>
       </div>
 
       {/* Print pages */}
       <div className="py-6 px-4">
         {pages.map((page, pi) => (
           <div key={pi} className="print-page bg-white shadow-md rounded mx-auto mb-4" style={{ width: '21cm', minHeight: '29.7cm', padding: '1.5cm' }}>
-            {/* Page header */}
             <div className="no-print border-b border-dashed border-gray-200 pb-3 mb-4 flex items-center justify-between">
               <p className="text-xs text-gray-400">Página {pi + 1} de {pages.length}</p>
-              <p className="text-xs text-gray-400">{4} comprobantes por página</p>
+              <p className="text-xs text-gray-400">4 comprobantes por página</p>
             </div>
 
-            {/* 2x2 grid */}
             <div className="grid grid-cols-2 gap-4">
-              {page.map((comp) => (
+              {page.map(comp => (
                 <ComprobanteCard
                   key={comp.id}
                   comp={comp}
@@ -163,13 +153,11 @@ export default function ImprimirTalonarioPage() {
                   anio={talonario.anio}
                 />
               ))}
-              {/* Fill empty slots */}
               {page.length < 4 && [...Array(4 - page.length)].map((_, i) => (
                 <div key={`empty-${i}`} className="border-2 border-dashed border-gray-200 rounded min-h-[180px]" />
               ))}
             </div>
 
-            {/* Page footer */}
             <div className="mt-6 pt-3 border-t border-gray-200 text-center text-xs text-gray-400">
               Complejo Educativo Católico Zaconato · Talonario {talonario.anio} · {talonario.estudiante.nombre}
             </div>

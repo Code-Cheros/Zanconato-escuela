@@ -1,5 +1,7 @@
 // components/layout/Sidebar.tsx
 'use client'
+
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
@@ -13,6 +15,19 @@ import {
   GraduationCap,
   ChevronRight,
 } from 'lucide-react'
+import {
+  Sidebar as SidebarRoot,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarSeparator,
+  useSidebar,
+} from '@/components/ui/sidebar'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -23,66 +38,84 @@ const navItems = [
   { href: '/reportes', label: 'Reportes', icon: BarChart3, roles: ['ADMINISTRATIVO'] },
 ]
 
+type SessionUser = { name?: string | null; email?: string | null; rol?: string }
+
+function roleLabel(rol: string | undefined) {
+  if (rol === 'ADMINISTRATIVO') return 'Administrativo'
+  if (rol === 'MATRICULA') return 'Matrícula'
+  if (rol === 'COLECTOR') return 'Colector'
+  return rol ?? ''
+}
+
 export default function Sidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
-  const rol = (session?.user as any)?.rol
+  const { setOpenMobile } = useSidebar()
+  const user = session?.user as SessionUser | undefined
+  const rol = user?.rol
 
-  const visibleItems = navItems.filter(item => item.roles.includes(rol))
+  const visibleItems = navItems.filter(item => item.roles.includes(rol ?? ''))
+
+  useEffect(() => {
+    setOpenMobile(false)
+  }, [pathname, setOpenMobile])
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-100 min-h-screen flex flex-col shadow-sm">
-      {/* Logo */}
-      <div className="px-6 py-5 border-b border-gray-100">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <GraduationCap className="w-5 h-5 text-white" />
+    <SidebarRoot collapsible="offcanvas" variant="floating">
+      <SidebarHeader className="border-b border-sidebar-border px-3 py-4">
+        <div className="flex items-center gap-3 px-1">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <GraduationCap className="size-5" />
           </div>
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-blue-700 leading-tight truncate">C.E.C.</p>
-            <p className="text-xs text-gray-500 leading-tight truncate">Zaconato</p>
+          <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+            <p className="truncate text-xs font-bold">C.E.C.</p>
+            <p className="truncate text-xs text-muted-foreground leading-tight">Zaconato</p>
           </div>
         </div>
-      </div>
+      </SidebarHeader>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {visibleItems.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + '/')
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'sidebar-link',
-                active ? 'active' : 'text-gray-600 hover:text-gray-900'
-              )}
-            >
-              <item.icon className="w-4 h-4 flex-shrink-0" />
-              <span className="flex-1">{item.label}</span>
-              {active && <ChevronRight className="w-3 h-3 opacity-70" />}
-            </Link>
-          )
-        })}
-      </nav>
+      <SidebarContent className="px-1 py-2">
+        <SidebarMenu>
+          {visibleItems.map(item => {
+            const active = pathname === item.href || pathname.startsWith(item.href + '/')
+            return (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton asChild isActive={active} tooltip={item.label} className='px-2 my-2'>
+                  <Link href={item.href}>
+                    <item.icon />
+                    <span className="flex-1">{item.label}</span>
+                    {active ? <ChevronRight className="size-3 opacity-70" /> : null}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          })}
+        </SidebarMenu>
+      </SidebarContent>
 
-      {/* User info + logout */}
-      <div className="px-3 py-4 border-t border-gray-100">
-        <div className="px-3 py-2 mb-2">
-          <p className="text-xs font-semibold text-gray-800 truncate">{session?.user?.name}</p>
-          <p className="text-xs text-gray-500 truncate">{session?.user?.email}</p>
-          <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded font-medium">
-            {rol === 'ADMINISTRATIVO' ? 'Administrativo' : rol === 'MATRICULA' ? 'Matrícula' : 'Colector'}
-          </span>
-        </div>
-        <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
-          className="sidebar-link w-full text-red-500 hover:bg-red-50 hover:text-red-700"
+      <SidebarFooter className="border-t border-sidebar-border p-2">
+        <div
+          className={cn(
+            'mb-2 rounded-md px-2 py-2 text-left',
+            'group-data-[collapsible=icon]:hidden'
+          )}
         >
-          <LogOut className="w-4 h-4" />
-          <span>Cerrar Sesión</span>
-        </button>
-      </div>
-    </aside>
+          <p className="truncate text-xs font-semibold text-sidebar-foreground">{user?.name}</p>
+          <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+          <Badge variant="secondary" className="mt-1.5 text-[0.65rem] font-medium">
+            {roleLabel(rol)}
+          </Badge>
+        </div>
+        <SidebarSeparator className="my-2 group-data-[collapsible=icon]:hidden" />
+        <Button
+          variant="ghost"
+          className="h-8 w-full justify-start gap-2 px-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={() => signOut({ callbackUrl: '/login' })}
+        >
+          <LogOut className="size-4 shrink-0" />
+          <span className="group-data-[collapsible=icon]:sr-only">Cerrar Sesión</span>
+        </Button>
+      </SidebarFooter>
+    </SidebarRoot>
   )
 }
