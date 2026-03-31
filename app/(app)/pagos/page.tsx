@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Header from '@/components/layout/Header'
-import { Plus, X, CreditCard } from 'lucide-react'
+import { Plus, X, CreditCard, Filter, Search } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { formatCurrency, formatDate, TIPO_PAGO_LABELS } from '@/lib/utils'
+import { formatCurrency, formatDate, TIPO_PAGO_LABELS, GRADOS, SECCIONES } from '@/lib/utils'
 import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -79,8 +79,20 @@ export default function PagosPage() {
   const [pagos, setPagos] = useState<Pago[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+  
+  // General filters
   const [filterFecha, setFilterFecha] = useState('')
   const [filterTipo, setFilterTipo] = useState('')
+  
+  // Student filters
+  const [filterNombre, setFilterNombre] = useState('')
+  const [filterNie, setFilterNie] = useState('')
+  const [filterGrado, setFilterGrado] = useState('')
+  const [filterSeccion, setFilterSeccion] = useState('')
+  const [filterEncargado, setFilterEncargado] = useState('')
+  const [filterTelefono, setFilterTelefono] = useState('')
+  const [filterEstado, setFilterEstado] = useState('')
 
   const [nie, setNie] = useState('')
   const [estudiante, setEstudiante] = useState<any>(null)
@@ -96,9 +108,18 @@ export default function PagosPage() {
       const params = new URLSearchParams()
       if (filterFecha) params.set('fecha', filterFecha)
       if (filterTipo) params.set('tipo', filterTipo)
+      if (filterNombre) params.set('nombre', filterNombre)
+      if (filterNie) params.set('nie', filterNie)
+      if (filterGrado) params.set('grado', filterGrado)
+      if (filterSeccion) params.set('seccion', filterSeccion)
+      if (filterEncargado) params.set('encargado', filterEncargado)
+      if (filterTelefono) params.set('telefono', filterTelefono)
+      if (filterEstado) params.set('estado', filterEstado)
+
       const estudianteId = searchParams.get('estudianteId')
       if (estudianteId) params.set('estudianteId', estudianteId)
-      const res = await fetch(`/api/pagos?${params}`)
+      
+      const res = await fetch(`/api/pagos?${params.toString()}`)
       const data = await res.json()
       setPagos(Array.isArray(data) ? data : [])
     } catch {
@@ -106,9 +127,23 @@ export default function PagosPage() {
     } finally {
       setLoading(false)
     }
-  }, [filterFecha, filterTipo, searchParams])
+  }, [filterFecha, filterTipo, filterNombre, filterNie, filterGrado, filterSeccion, filterEncargado, filterTelefono, filterEstado, searchParams])
 
   useEffect(() => { fetchPagos() }, [fetchPagos])
+
+  const clearFilters = () => {
+    setFilterFecha('')
+    setFilterTipo('')
+    setFilterNombre('')
+    setFilterNie('')
+    setFilterGrado('')
+    setFilterSeccion('')
+    setFilterEncargado('')
+    setFilterTelefono('')
+    setFilterEstado('')
+  }
+
+  const hasActiveFilters = filterFecha || filterTipo || filterNombre || filterNie || filterGrado || filterSeccion || filterEncargado || filterTelefono || filterEstado
 
   const buscarEstudiante = async () => {
     if (!nie.trim()) return
@@ -167,37 +202,145 @@ export default function PagosPage() {
 
       <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-5">
         {/* Filter bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              type="date"
-              value={filterFecha}
-              onChange={e => setFilterFecha(e.target.value)}
-              className="w-auto"
-            />
-            <Select value={filterTipo || 'all'} onValueChange={v => setFilterTipo(v === 'all' ? '' : v)}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Todos los tipos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los tipos</SelectItem>
-                {Object.entries(TIPO_PAGO_OPTIONS).map(([v, l]) => (
-                  <SelectItem key={v} value={v}>{l}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {(filterFecha || filterTipo) && (
-              <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground" onClick={() => { setFilterFecha(''); setFilterTipo('') }}>
-                <X className="size-4" /> Limpiar
-              </Button>
-            )}
-          </div>
-          {(rol === 'COLECTOR' || rol === 'ADMINISTRATIVO') && (
-            <Button onClick={() => setShowForm(!showForm)}>
-              <Plus className="size-4" /> Registrar Pago
-            </Button>
+        <Card className="py-0">
+          <CardHeader className="flex flex-col gap-4 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+             <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={filterFecha}
+                  onChange={e => setFilterFecha(e.target.value)}
+                  className="w-auto h-9 text-xs"
+                />
+                <Select value={filterTipo || 'all'} onValueChange={v => setFilterTipo(v === 'all' ? '' : v)}>
+                  <SelectTrigger className="w-40 h-9 text-xs">
+                    <SelectValue placeholder="Todos los tipos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los tipos</SelectItem>
+                    {Object.entries(TIPO_PAGO_LABELS).map(([v, l]) => (
+                      <SelectItem key={v} value={v}>{l}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  variant={showFilters ? "secondary" : "outline"} 
+                  size="sm" 
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="gap-2 h-9"
+                >
+                  <Filter className="size-4" />
+                  {showFilters ? 'Ocultar Filtros' : 'Más Filtros'}
+                  {hasActiveFilters && !filterFecha && !filterTipo && (
+                    <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px] uppercase">
+                      Activos
+                    </Badge>
+                  )}
+                </Button>
+             </div>
+             <div className="flex items-center gap-2">
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 gap-2 text-muted-foreground">
+                    <X className="size-4" />
+                    Limpiar
+                  </Button>
+                )}
+                {(rol === 'COLECTOR' || rol === 'ADMINISTRATIVO') && (
+                  <Button size="sm" onClick={() => setShowForm(!showForm)}>
+                    <Plus className="size-4" /> Registrar Pago
+                  </Button>
+                )}
+             </div>
+          </CardHeader>
+          
+          {/* Expanded Filters */}
+          {showFilters && (
+            <div className="p-4 border-b bg-muted/20">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Estudiante</label>
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Nombre..."
+                      value={filterNombre}
+                      onChange={e => setFilterNombre(e.target.value)}
+                      className="h-9 pl-8 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">NIE</label>
+                  <Input
+                    placeholder="NIE..."
+                    value={filterNie}
+                    onChange={e => setFilterNie(e.target.value)}
+                    className="h-9 text-sm font-mono"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Grado</label>
+                  <Select value={filterGrado || 'all'} onValueChange={v => setFilterGrado(v === 'all' ? '' : v)}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Todos los grados" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los grados</SelectItem>
+                      {GRADOS.map(g => (
+                        <SelectItem key={g} value={g}>{g}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sección</label>
+                  <Select value={filterSeccion || 'all'} onValueChange={v => setFilterSeccion(v === 'all' ? '' : v)}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      {SECCIONES.map(s => (
+                        <SelectItem key={s} value={s}>Sección {s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Encargado</label>
+                  <Input
+                    placeholder="..."
+                    value={filterEncargado}
+                    onChange={e => setFilterEncargado(e.target.value)}
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Teléfono</label>
+                  <Input
+                    placeholder="..."
+                    value={filterTelefono}
+                    onChange={e => setFilterTelefono(e.target.value)}
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Estado Estudiante</label>
+                  <Select value={filterEstado || 'all'} onValueChange={v => setFilterEstado(v === 'all' ? '' : v)}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="AL_DIA">Al día</SelectItem>
+                      <SelectItem value="PENDIENTE">Pendiente</SelectItem>
+                      <SelectItem value="INCOMPLETO">Incompleto / Atrasado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
           )}
-        </div>
+        </Card>
 
         {/* Payment form */}
         {showForm && (rol === 'COLECTOR' || rol === 'ADMINISTRATIVO') && (
