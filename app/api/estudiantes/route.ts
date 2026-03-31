@@ -14,18 +14,68 @@ export async function GET(req: NextRequest) {
   const nombre = searchParams.get('nombre')
   const nie = searchParams.get('nie')
   const grado = searchParams.get('grado')
+  const seccion = searchParams.get('seccion')
+  const encargado = searchParams.get('encargado')
+  const telefono = searchParams.get('telefono')
+  const estado = searchParams.get('estado')
+
+  const anioActual = new Date().getFullYear()
+
+  const where: any = {
+    ...(nombre && { nombre: { contains: nombre, mode: 'insensitive' } }),
+    ...(nie && { nie: { contains: nie, mode: 'insensitive' } }),
+    ...(grado && { grado: { contains: grado, mode: 'insensitive' } }),
+    ...(seccion && { seccion: { contains: seccion, mode: 'insensitive' } }),
+    ...(encargado && { encargado: { contains: encargado, mode: 'insensitive' } }),
+    ...(telefono && { telefono: { contains: telefono, mode: 'insensitive' } }),
+  }
+
+  // Filtrado por estado (basado en colegiaturas del año actual)
+  if (estado === 'AL_DIA') {
+    where.talonarios = {
+      some: {
+        anio: anioActual,
+        comprobantes: {
+          none: { tipo: 'COLEGIATURA', pagado: false },
+          some: { tipo: 'COLEGIATURA' } // Asegurar que tenga al menos una colegiatura
+        }
+      }
+    }
+  } else if (estado === 'PENDIENTE') {
+    where.talonarios = {
+      some: {
+        anio: anioActual,
+        comprobantes: {
+          every: { tipo: 'COLEGIATURA', pagado: false },
+          some: { tipo: 'COLEGIATURA' }
+        }
+      }
+    }
+  } else if (estado === 'INCOMPLETO') {
+    where.talonarios = {
+      some: {
+        anio: anioActual,
+        comprobantes: {
+          some: { AND: [{ tipo: 'COLEGIATURA' }, { pagado: true }] }
+        },
+        AND: [
+          {
+            comprobantes: {
+              some: { AND: [{ tipo: 'COLEGIATURA' }, { pagado: false }] }
+            }
+          }
+        ]
+      }
+    }
+  }
 
   const estudiantes = await prisma.estudiante.findMany({
-    where: {
-      ...(nombre && { nombre: { contains: nombre, mode: 'insensitive' } }),
-      ...(nie && { nie: { contains: nie, mode: 'insensitive' } }),
-      ...(grado && { grado: { contains: grado, mode: 'insensitive' } }),
-    },
+    where,
     include: {
       pagos: { orderBy: { fecha: 'desc' }, take: 1 },
       talonarios: {
         include: {
-          comprobantes: true,
+          comprobantes: { orderBy: { orden: 'asc' } },
         },
         orderBy: { anio: 'desc' },
         take: 1,
@@ -71,7 +121,7 @@ export async function POST(req: NextRequest) {
     const emailTemp = `estudiante.${nie.toLowerCase()}@zaconato.edu.sv`
     const passwordTemp = await bcrypt.hash(`${nie}${anioActual}`, 10)
 
-    const resultado = await prisma.$transaction(async (tx) => {
+    const resultado = await prisma.$transaction(async (tx: any) => {
       const usuario = await tx.usuario.create({
         data: {
           nombre,
