@@ -2,8 +2,8 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import Header from '@/components/layout/Header'
-import { Users, CheckCircle, FileText, TrendingUp, Plus, Search, Eye, CreditCard } from 'lucide-react'
-import { formatCurrency } from '@/lib/utils'
+import { Users, CheckCircle, FileText, TrendingUp, Plus, Search, Eye, CreditCard, Filter, X } from 'lucide-react'
+import { formatCurrency, GRADOS, SECCIONES } from '@/lib/utils'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import {
@@ -25,6 +25,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Empty,
   EmptyDescription,
@@ -105,14 +112,32 @@ function EstudianteActions({ estudianteId }: { estudianteId: string }) {
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([])
-  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [showFilters, setShowFilters] = useState(false)
+
+  // Filters
+  const [filterNombre, setFilterNombre] = useState('')
+  const [filterNie, setFilterNie] = useState('')
+  const [filterGrado, setFilterGrado] = useState('')
+  const [filterSeccion, setFilterSeccion] = useState('')
+  const [filterEncargado, setFilterEncargado] = useState('')
+  const [filterTelefono, setFilterTelefono] = useState('')
+  const [filterEstado, setFilterEstado] = useState('')
 
   const fetchData = useCallback(async () => {
     try {
+      const params = new URLSearchParams()
+      if (filterNombre) params.set('nombre', filterNombre)
+      if (filterNie) params.set('nie', filterNie)
+      if (filterGrado) params.set('grado', filterGrado)
+      if (filterSeccion) params.set('seccion', filterSeccion)
+      if (filterEncargado) params.set('encargado', filterEncargado)
+      if (filterTelefono) params.set('telefono', filterTelefono)
+      if (filterEstado) params.set('estado', filterEstado)
+
       const [statsRes, estRes] = await Promise.all([
         fetch('/api/dashboard/stats'),
-        fetch(`/api/estudiantes?${search ? `nombre=${encodeURIComponent(search)}` : ''}`),
+        fetch(`/api/estudiantes?${params.toString()}`),
       ])
       const statsData = await statsRes.json()
       const estData = await estRes.json()
@@ -123,11 +148,23 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
-  }, [search])
+  }, [filterNombre, filterNie, filterGrado, filterSeccion, filterEncargado, filterTelefono, filterEstado])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  const clearFilters = () => {
+    setFilterNombre('')
+    setFilterNie('')
+    setFilterGrado('')
+    setFilterSeccion('')
+    setFilterEncargado('')
+    setFilterTelefono('')
+    setFilterEstado('')
+  }
+
+  const hasActiveFilters = filterNombre || filterNie || filterGrado || filterSeccion || filterEncargado || filterTelefono || filterEstado
 
   const statCards = stats
     ? [
@@ -203,30 +240,127 @@ export default function DashboardPage() {
 
         {/* Students */}
         <Card className="min-w-0 py-0">
-          <CardHeader className="flex flex-col gap-4 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <CardTitle className="text-base sm:text-lg">Gestión de Estudiantes</CardTitle>
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[min(100%,20rem)] sm:flex-row sm:items-center sm:gap-3">
-              <div className="relative w-full min-w-0 flex-1 sm:max-w-md">
-                <Search
-                  className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                  aria-hidden
-                />
-                <Input
-                  type="search"
-                  placeholder="Buscar por nombre, NIE o grado..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="w-full pl-9"
-                  autoComplete="off"
-                />
+          <CardHeader className="flex flex-col gap-4 border-b px-4 py-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="text-base sm:text-lg">Gestión de Estudiantes</CardTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button 
+                  variant={showFilters ? "secondary" : "outline"} 
+                  size="sm" 
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="gap-2"
+                >
+                  <Filter className="size-4" />
+                  {showFilters ? 'Ocultar Filtros' : 'Filtros'}
+                  {hasActiveFilters && (
+                    <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px] uppercase">
+                      Activos
+                    </Badge>
+                  )}
+                </Button>
+                <Button size="sm" asChild>
+                  <Link href="/estudiantes/nuevo">
+                    <Plus className="size-4" />
+                    Nueva Matrícula
+                  </Link>
+                </Button>
               </div>
-              <Button className="w-full shrink-0 sm:w-auto" asChild>
-                <Link href="/estudiantes/nuevo">
-                  <Plus className="size-4" />
-                  Matricular Nuevo
-                </Link>
-              </Button>
             </div>
+
+            {/* Expanded Filters */}
+            {showFilters && (
+              <div className="grid grid-cols-1 gap-3 border-t pt-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Nombre</label>
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por nombre..."
+                      value={filterNombre}
+                      onChange={e => setFilterNombre(e.target.value)}
+                      className="h-9 pl-8 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">NIE</label>
+                  <Input
+                    placeholder="Número de NIE..."
+                    value={filterNie}
+                    onChange={e => setFilterNie(e.target.value)}
+                    className="h-9 text-sm font-mono"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Grado</label>
+                  <Select value={filterGrado || 'all'} onValueChange={v => setFilterGrado(v === 'all' ? '' : v)}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Todos los grados" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los grados</SelectItem>
+                      {GRADOS.map(g => (
+                        <SelectItem key={g} value={g}>{g}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sección</label>
+                  <Select value={filterSeccion || 'all'} onValueChange={v => setFilterSeccion(v === 'all' ? '' : v)}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      {SECCIONES.map(s => (
+                        <SelectItem key={s} value={s}>Sección {s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Encargado</label>
+                  <Input
+                    placeholder="Nombre del encargado..."
+                    value={filterEncargado}
+                    onChange={e => setFilterEncargado(e.target.value)}
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Teléfono</label>
+                  <Input
+                    placeholder="Número de teléfono..."
+                    value={filterTelefono}
+                    onChange={e => setFilterTelefono(e.target.value)}
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Estado de Pago</label>
+                  <Select value={filterEstado || 'all'} onValueChange={v => setFilterEstado(v === 'all' ? '' : v)}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Todos los estados" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los estados</SelectItem>
+                      <SelectItem value="AL_DIA">Al día</SelectItem>
+                      <SelectItem value="PENDIENTE">Pendiente</SelectItem>
+                      <SelectItem value="INCOMPLETO">Incompleto / Atrasado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end pb-0.5">
+                  {hasActiveFilters && (
+                    <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 w-full gap-2 text-muted-foreground">
+                      <X className="size-4" />
+                      Limpiar filtros
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </CardHeader>
 
           {/* Desktop table */}
