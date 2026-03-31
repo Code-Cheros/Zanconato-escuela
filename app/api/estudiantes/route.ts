@@ -58,6 +58,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'El NIE debe tener exactamente 8 dígitos numéricos' }, { status: 400 })
     }
 
+    if (telefono && !/^\d{8}$/.test(telefono)) {
+      return NextResponse.json({ error: 'El teléfono debe tener exactamente 8 dígitos numéricos' }, { status: 400 })
+    }
+
     const existing = await prisma.estudiante.findUnique({ where: { nie } })
     if (existing) {
       return NextResponse.json({ error: 'NIE ya registrado' }, { status: 409 })

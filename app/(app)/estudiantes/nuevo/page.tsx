@@ -33,10 +33,10 @@ export default function NuevoEstudiantePage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    if (name === 'nie') {
+    if (name === 'nie' || name === 'telefono') {
       const onlyNums = value.replace(/[^0-9]/g, '')
       if (onlyNums.length <= 8) {
-        setForm({ ...form, nie: onlyNums })
+        setForm({ ...form, [name]: onlyNums })
       }
       return
     }
@@ -56,6 +56,11 @@ export default function NuevoEstudiantePage() {
 
     if (form.nie.length !== 8) {
       toast.error('El NIE debe tener exactamente 8 dígitos')
+      return
+    }
+
+    if (form.telefono && form.telefono.length !== 8) {
+      toast.error('El teléfono debe tener exactamente 8 dígitos')
       return
     }
 
@@ -183,14 +188,16 @@ export default function NuevoEstudiantePage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="telefono">Teléfono de contacto</Label>
+                    <Label htmlFor="telefono">Teléfono (8 dígitos)</Label>
                     <Input
                       id="telefono"
                       name="telefono"
                       type="tel"
                       value={form.telefono}
                       onChange={handleChange}
-                      placeholder="7000-0000"
+                      placeholder="Ej: 71234567"
+                      maxLength={8}
+                      inputMode="numeric"
                     />
                   </div>
                 </div>
