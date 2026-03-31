@@ -49,7 +49,7 @@ export default function EstudianteDetailPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Info card */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                 <User className="w-4 h-4 text-blue-600" /> Datos Personales
@@ -79,7 +79,7 @@ export default function EstudianteDetailPage() {
           </div>
 
           {/* Talonarios */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm">
+          <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-xs">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-blue-600" /> Talonarios
@@ -126,7 +126,7 @@ export default function EstudianteDetailPage() {
         </div>
 
         {/* Pagos recientes */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-xs">
           <div className="px-6 py-4 border-b border-gray-100">
             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-blue-600" /> Pagos Registrados

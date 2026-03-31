@@ -61,7 +61,7 @@ export default function NuevoEstudiantePage() {
             <ArrowLeft className="w-4 h-4" /> Volver a estudiantes
           </Link>
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-xs">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                 <UserPlus className="w-4 h-4 text-blue-600" />
@@ -84,7 +84,7 @@ export default function NuevoEstudiantePage() {
                     value={form.nombre}
                     onChange={handleChange}
                     placeholder="Nombre y apellidos del estudiante"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -99,7 +99,7 @@ export default function NuevoEstudiantePage() {
                     value={form.nie}
                     onChange={handleChange}
                     placeholder="Número de identificación"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -112,7 +112,7 @@ export default function NuevoEstudiantePage() {
                     name="grado"
                     value={form.grado}
                     onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white"
                     required
                   >
                     <option value="">Seleccionar grado</option>
@@ -128,7 +128,7 @@ export default function NuevoEstudiantePage() {
                     name="seccion"
                     value={form.seccion}
                     onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white"
                     required
                   >
                     <option value="">Seleccionar sección</option>
@@ -146,7 +146,7 @@ export default function NuevoEstudiantePage() {
                     value={form.encargado}
                     onChange={handleChange}
                     placeholder="Nombre del encargado"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -160,7 +160,7 @@ export default function NuevoEstudiantePage() {
                     value={form.telefono}
                     onChange={handleChange}
                     placeholder="7000-0000"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>

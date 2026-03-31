@@ -31,11 +31,11 @@ export default function Sidebar() {
   const visibleItems = navItems.filter(item => item.roles.includes(rol))
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-100 min-h-screen flex flex-col shadow-sm">
+    <aside className="w-64 bg-white border-r border-gray-100 min-h-screen flex flex-col shadow-xs">
       {/* Logo */}
       <div className="px-6 py-5 border-b border-gray-100">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+          <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div className="min-w-0">
@@ -58,7 +58,7 @@ export default function Sidebar() {
                 active ? 'active' : 'text-gray-600 hover:text-gray-900'
               )}
             >
-              <item.icon className="w-4 h-4 flex-shrink-0" />
+              <item.icon className="w-4 h-4 shrink-0" />
               <span className="flex-1">{item.label}</span>
               {active && <ChevronRight className="w-3 h-3 opacity-70" />}
             </Link>

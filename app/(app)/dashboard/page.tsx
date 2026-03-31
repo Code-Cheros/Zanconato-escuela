@@ -92,7 +92,7 @@ export default function DashboardPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {statCards.map((card) => (
-              <div key={card.label} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+              <div key={card.label} className="bg-white rounded-xl p-5 border border-gray-100 shadow-xs">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-gray-500 font-medium">{card.label}</p>
@@ -108,7 +108,7 @@ export default function DashboardPage() {
         )}
 
         {/* Students Table */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-xs">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4">
             <h2 className="font-semibold text-gray-900">Gestión de Estudiantes</h2>
             <div className="flex items-center gap-3">
@@ -119,7 +119,7 @@ export default function DashboardPage() {
                   placeholder="Buscar por nombre, NIE o grado..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-64 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <Link

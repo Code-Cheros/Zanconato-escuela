@@ -139,12 +139,12 @@ export default function PagosPage() {
               type="date"
               value={filterFecha}
               onChange={e => setFilterFecha(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             />
             <select
               value={filterTipo}
               onChange={e => setFilterTipo(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white"
             >
               <option value="">Todos los tipos</option>
               {Object.entries(TIPO_PAGO_LABELS).map(([v, l]) => (
@@ -171,7 +171,7 @@ export default function PagosPage() {
 
         {/* Payment form */}
         {showForm && (rol === 'COLECTOR' || rol === 'ADMINISTRATIVO') && (
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-6">
             <h3 className="font-semibold text-gray-900 mb-4">Registrar Nuevo Pago</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
@@ -182,7 +182,7 @@ export default function PagosPage() {
                     value={nie}
                     onChange={e => setNie(e.target.value)}
                     placeholder="Ej: 123456789"
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                   />
                   <button onClick={buscarEstudiante}
                     className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors">
@@ -200,7 +200,7 @@ export default function PagosPage() {
                   <select
                     value={selectedTalonario}
                     onChange={e => { setSelectedTalonario(e.target.value); setSelectedComprobante('') }}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="">Seleccionar año</option>
                     {talonarios.map(t => (
@@ -216,7 +216,7 @@ export default function PagosPage() {
                   <select
                     value={selectedComprobante}
                     onChange={e => setSelectedComprobante(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="">Seleccionar comprobante</option>
                     {comprobantesDisponibles.map(c => (
@@ -235,7 +235,7 @@ export default function PagosPage() {
                   value={notas}
                   onChange={e => setNotas(e.target.value)}
                   placeholder="Observaciones..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -258,7 +258,7 @@ export default function PagosPage() {
         )}
 
         {/* Payments table */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-xs">
           <div className="px-6 py-4 border-b border-gray-100">
             <h2 className="font-semibold text-gray-900">Historial de Pagos</h2>
           </div>

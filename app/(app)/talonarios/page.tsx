@@ -86,14 +86,14 @@ export default function TalonariosPage() {
         </div>
 
         {showForm && (
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-6">
             <h3 className="font-semibold text-gray-900 mb-4">Generar Talonario</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1.5">NIE del Estudiante</label>
                 <div className="flex gap-2">
                   <input type="text" value={nie} onChange={e => setNie(e.target.value)}
-                    placeholder="NIE..." className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    placeholder="NIE..." className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500" />
                   <button onClick={buscarEstudiante} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm">Buscar</button>
                 </div>
                 {estudiante && <p className="text-xs text-emerald-600 mt-1">✓ {estudiante.nombre}</p>}
@@ -101,7 +101,7 @@ export default function TalonariosPage() {
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1.5">Año</label>
                 <input type="number" value={anio} onChange={e => setAnio(e.target.value)} min="2020" max="2030"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
             <div className="flex gap-3 mt-4">
@@ -125,7 +125,7 @@ export default function TalonariosPage() {
             ))}
           </div>
         ) : talonarios.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-12 text-center">
             <BookOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-400 text-sm">No hay talonarios registrados</p>
           </div>
@@ -140,7 +140,7 @@ export default function TalonariosPage() {
               const pct = totalComprobantes > 0 ? Math.round((pagados / totalComprobantes) * 100) : 0
 
               return (
-                <div key={tal.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                <div key={tal.id} className="bg-white rounded-xl border border-gray-100 shadow-xs p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <h3 className="font-semibold text-gray-900 text-sm">{tal.estudiante.nombre}</h3>

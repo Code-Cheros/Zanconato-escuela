@@ -84,7 +84,7 @@ export default function EditarEstudiantePage() {
             <ArrowLeft className="w-4 h-4" /> Volver al perfil
           </Link>
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-xs">
             <div className="px-6 py-4 border-b border-gray-100">
               <h2 className="font-semibold text-gray-900">Datos del Estudiante</h2>
             </div>
@@ -96,7 +96,7 @@ export default function EditarEstudiantePage() {
                     Nombre Completo <span className="text-red-500">*</span>
                   </label>
                   <input type="text" name="nombre" value={form.nombre} onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500" required />
                 </div>
 
                 <div>
@@ -104,7 +104,7 @@ export default function EditarEstudiantePage() {
                     NIE <span className="text-red-500">*</span>
                   </label>
                   <input type="text" name="nie" value={form.nie} onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-blue-500" required />
                 </div>
 
                 <div>
@@ -112,7 +112,7 @@ export default function EditarEstudiantePage() {
                     Grado <span className="text-red-500">*</span>
                   </label>
                   <select name="grado" value={form.grado} onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" required>
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white" required>
                     <option value="">Seleccionar grado</option>
                     {GRADOS.map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
@@ -123,7 +123,7 @@ export default function EditarEstudiantePage() {
                     Sección <span className="text-red-500">*</span>
                   </label>
                   <select name="seccion" value={form.seccion} onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" required>
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white" required>
                     <option value="">Seleccionar sección</option>
                     {SECCIONES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -133,14 +133,14 @@ export default function EditarEstudiantePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Encargado</label>
                   <input type="text" name="encargado" value={form.encargado} onChange={handleChange}
                     placeholder="Nombre del encargado"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500" />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Teléfono</label>
                   <input type="tel" name="telefono" value={form.telefono} onChange={handleChange}
                     placeholder="7000-0000"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500" />
                 </div>
               </div>
 

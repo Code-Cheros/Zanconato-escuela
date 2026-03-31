@@ -82,7 +82,7 @@ export default function ReportesPage() {
 
       <div className="flex-1 p-6 space-y-5">
         {/* Controls */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-5">
           <div className="flex items-end gap-4 flex-wrap">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Seleccionar Fecha</label>
@@ -90,7 +90,7 @@ export default function ReportesPage() {
                 type="date"
                 value={fecha}
                 onChange={e => setFecha(e.target.value)}
-                className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -144,7 +144,7 @@ export default function ReportesPage() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-xs">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="font-semibold text-gray-900">Detalle de Pagos</h2>
                 <span className="text-xs text-gray-500">{reporte.cantidad} registros</span>

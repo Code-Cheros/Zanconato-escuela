@@ -66,7 +66,7 @@ export default function TalonarioDetailPage() {
             { label: 'Pagado', value: formatCurrency(montoPagado), color: 'text-emerald-600' },
             { label: 'Pendiente', value: formatCurrency(pendiente), color: 'text-amber-600' },
           ].map(item => (
-            <div key={item.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
+            <div key={item.label} className="bg-white rounded-xl border border-gray-100 shadow-xs p-4 text-center">
               <p className="text-xs text-gray-500 mb-1">{item.label}</p>
               <p className={`text-xl font-bold ${item.color}`}>{item.value}</p>
             </div>
@@ -83,7 +83,7 @@ export default function TalonarioDetailPage() {
             ALIMENTACION: 'bg-green-50 border-green-200 text-green-800',
           }
           return (
-            <div key={tipo} className="bg-white rounded-xl border border-gray-100 shadow-sm">
+            <div key={tipo} className="bg-white rounded-xl border border-gray-100 shadow-xs">
               <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${labelColors[tipo]}`}>
                   {TIPO_PAGO_LABELS[tipo]}
@@ -97,8 +97,8 @@ export default function TalonarioDetailPage() {
                   <div key={c.id} className="px-5 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {c.pagado
-                        ? <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                        : <Circle className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                        ? <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                        : <Circle className="w-4 h-4 text-gray-300 shrink-0" />
                       }
                       <span className="text-sm text-gray-700">
                         {TIPO_PAGO_LABELS[c.tipo]}{c.mes ? ` — ${c.mes}` : ''}

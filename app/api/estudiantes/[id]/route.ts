@@ -4,12 +4,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
+  const { id } = await params
   const estudiante = await prisma.estudiante.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       usuario: { select: { id: true, email: true, rol: true, activo: true } },
       talonarios: {
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(estudiante)
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
@@ -36,11 +37,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 
   try {
+    const { id } = await params
     const body = await req.json()
     const { nombre, nie, grado, seccion, encargado, telefono } = body
 
     const estudiante = await prisma.estudiante.update({
-      where: { id: params.id },
+      where: { id },
       data: { nombre, nie, grado, seccion, encargado, telefono },
     })
 
@@ -50,7 +52,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
@@ -60,7 +62,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   }
 
   try {
-    await prisma.estudiante.delete({ where: { id: params.id } })
+    const { id } = await params
+    await prisma.estudiante.delete({ where: { id } })
     return NextResponse.json({ ok: true })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
