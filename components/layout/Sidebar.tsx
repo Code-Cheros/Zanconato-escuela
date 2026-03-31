@@ -14,6 +14,7 @@ import {
   LogOut,
   GraduationCap,
   ChevronRight,
+  UserCog,
 } from 'lucide-react'
 import {
   Sidebar as SidebarRoot,
@@ -35,6 +36,7 @@ const navItems = [
   { href: '/pagos', label: 'Gestionar Pagos', icon: CreditCard, roles: ['COLECTOR', 'ADMINISTRATIVO'] },
   { href: '/talonarios', label: 'Talonarios', icon: BookOpen, roles: ['COLECTOR', 'MATRICULA', 'ADMINISTRATIVO'] },
   { href: '/estudiantes', label: 'Estudiantes', icon: Users, roles: ['MATRICULA', 'ADMINISTRATIVO'] },
+  { href: '/usuarios', label: 'Usuarios', icon: UserCog, roles: ['ADMINISTRATIVO'] },
   { href: '/reportes', label: 'Reportes', icon: BarChart3, roles: ['ADMINISTRATIVO'] },
 ]
 
