@@ -15,6 +15,8 @@ export const GRADOS = [
   '1° Grado', '2° Grado', '3° Grado', '4° Grado', '5° Grado', '6° Grado',
   '7° Grado', '8° Grado', '9° Grado',
   '1° Bachillerato', '2° Bachillerato',
+  '3° Bachillerato'
+  
 ]
 
 export const SECCIONES = ['A', 'B', 'C', 'D', 'E']

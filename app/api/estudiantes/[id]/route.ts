@@ -12,7 +12,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const estudiante = await prisma.estudiante.findUnique({
     where: { id },
     include: {
-      usuario: { select: { id: true, email: true, rol: true, activo: true } },
       talonarios: {
         include: {
           comprobantes: { orderBy: { orden: 'asc' } },
@@ -39,7 +38,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params
     const body = await req.json()
-    const { nombre, nie, grado, seccion, encargado, telefono } = body
+    const { nombre, nie, grado, seccion, encargado, telefono, activo } = body
 
     if (nie && !/^\d{8}$/.test(nie)) {
       return NextResponse.json({ error: 'El NIE debe tener exactamente 8 dígitos numéricos' }, { status: 400 })
@@ -51,7 +50,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const estudiante = await prisma.estudiante.update({
       where: { id },
-      data: { nombre, nie, grado, seccion, encargado, telefono },
+      data: { 
+        nombre, 
+        nie, 
+        grado, 
+        seccion, 
+        encargado, 
+        telefono,
+        activo: activo !== undefined ? Boolean(activo) : undefined
+      },
     })
 
     return NextResponse.json(estudiante)

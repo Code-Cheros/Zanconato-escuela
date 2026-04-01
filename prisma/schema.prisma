@@ -16,7 +16,6 @@ model Usuario {
   rol        Rol        @default(COLECTOR)
   activo     Boolean    @default(true)
   creadoEn   DateTime   @default(now())
-  estudiante Estudiante?
 }
 
 enum Rol {
@@ -33,8 +32,7 @@ model Estudiante {
   seccion    String
   encargado  String?
   telefono   String?
-  usuarioId  String?     @unique
-  usuario    Usuario?    @relation(fields: [usuarioId], references: [id])
+  activo     Boolean     @default(true)
   pagos      Pago[]
   talonarios Talonario[]
   creadoEn   DateTime    @default(now())
@@ -45,9 +43,12 @@ model Talonario {
   estudianteId String
   estudiante   Estudiante    @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
   anio         Int
+  grado        String?
+  seccion      String?
   comprobantes Comprobante[]
   creadoEn     DateTime      @default(now())
 }
+
 
 model Comprobante {
   id          String    @id @default(cuid())

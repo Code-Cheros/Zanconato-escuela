@@ -18,8 +18,9 @@ export async function GET(req: NextRequest) {
   const encargado = searchParams.get('encargado')
   const telefono = searchParams.get('telefono')
   const estado = searchParams.get('estado')
+  const anioHeader = searchParams.get('anio')
 
-  const anioActual = new Date().getFullYear()
+  const anioActual = anioHeader ? parseInt(anioHeader) : new Date().getFullYear()
 
   const where: any = {
     ...(nombre && { nombre: { contains: nombre, mode: 'insensitive' } }),
@@ -30,14 +31,14 @@ export async function GET(req: NextRequest) {
     ...(telefono && { telefono: { contains: telefono, mode: 'insensitive' } }),
   }
 
-  // Filtrado por estado (basado en colegiaturas del año actual)
+  // Filtrado por estado (basado en el año seleccionado)
   if (estado === 'AL_DIA') {
     where.talonarios = {
       some: {
         anio: anioActual,
         comprobantes: {
           none: { tipo: 'COLEGIATURA', pagado: false },
-          some: { tipo: 'COLEGIATURA' } // Asegurar que tenga al menos una colegiatura
+          some: { tipo: 'COLEGIATURA' }
         }
       }
     }
@@ -74,6 +75,7 @@ export async function GET(req: NextRequest) {
     include: {
       pagos: { orderBy: { fecha: 'desc' }, take: 1 },
       talonarios: {
+        where: { anio: anioActual },
         include: {
           comprobantes: { orderBy: { orden: 'asc' } },
         },
@@ -118,20 +120,8 @@ export async function POST(req: NextRequest) {
     }
 
     const anioActual = new Date().getFullYear()
-    const emailTemp = `estudiante.${nie.toLowerCase()}@zaconato.edu.sv`
-    const passwordTemp = await bcrypt.hash(`${nie}${anioActual}`, 10)
 
     const resultado = await prisma.$transaction(async (tx: any) => {
-      const usuario = await tx.usuario.create({
-        data: {
-          nombre,
-          email: emailTemp,
-          password: passwordTemp,
-          rol: 'MATRICULA',
-          activo: true,
-        },
-      })
-
       const estudiante = await tx.estudiante.create({
         data: {
           nombre,
@@ -140,7 +130,6 @@ export async function POST(req: NextRequest) {
           seccion,
           encargado,
           telefono,
-          usuarioId: usuario.id,
         },
       })
 
@@ -149,6 +138,8 @@ export async function POST(req: NextRequest) {
         data: {
           estudianteId: estudiante.id,
           anio: anioActual,
+          grado,
+          seccion
         },
       })
 
@@ -181,7 +172,7 @@ export async function POST(req: NextRequest) {
         })),
       })
 
-      return { estudiante, usuario, talonario }
+      return { estudiante, talonario }
     })
 
     return NextResponse.json(resultado, { status: 201 })

@@ -34,10 +34,34 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { estudianteId, anio, montoMatricula, montoPapeleria, montoColegiatura, montoAlimentacion, incluirAlimentacion } = body
+    const { 
+      estudianteId, 
+      anio, 
+      montoMatricula, 
+      montoPapeleria, 
+      montoColegiatura, 
+      montoAlimentacion, 
+      incluirAlimentacion,
+      grado,
+      seccion 
+    } = body
+
 
     if (!estudianteId || !anio) {
       return NextResponse.json({ error: 'estudianteId y anio son requeridos' }, { status: 400 })
+    }
+
+    const student = await prisma.estudiante.findUnique({
+      where: { id: estudianteId },
+      select: { activo: true }
+    })
+
+    if (!student) {
+      return NextResponse.json({ error: 'Estudiante no encontrado' }, { status: 404 })
+    }
+
+    if (!student.activo) {
+      return NextResponse.json({ error: 'El estudiante está inactivo y no se le puede generar talonario' }, { status: 403 })
     }
 
     const existing = await prisma.talonario.findFirst({
@@ -48,9 +72,26 @@ export async function POST(req: NextRequest) {
     }
 
     const talonario = await prisma.$transaction(async (tx) => {
+      // Actualizar grado/sección del estudiante si se proporcionan
+      if (grado || seccion) {
+        await tx.estudiante.update({
+          where: { id: estudianteId },
+          data: {
+            ...(grado && { grado }),
+            ...(seccion && { seccion }),
+          },
+        })
+      }
+
       const t = await tx.talonario.create({
-        data: { estudianteId, anio: parseInt(anio) },
+        data: { 
+          estudianteId, 
+          anio: parseInt(anio),
+          grado,
+          seccion
+        },
       })
+
 
       const comprobantes = [
         { tipo: 'MATRICULA', monto: montoMatricula || 10.00, mes: null, orden: 1 },
