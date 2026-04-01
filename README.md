@@ -96,9 +96,23 @@ zaconato-escuela/
 ## ✅ Requisitos Previos
 
 - **Node.js** 18.17.0 o superior
-- **npm** 9+ o **pnpm** 8+
+- **Bun** (Recomendado para desarrollo rápido) o **npm** 9+
 - **Cuenta de Azure** con acceso a Azure Database for PostgreSQL
 - **Git**
+
+### Instalación de Bun
+
+Si no tienes Bun instalado, puedes instalarlo con:
+
+**Windows (PowerShell):**
+```powershell
+powershell -c "irm bun.sh/install.ps1 | iex"
+```
+
+**macOS / Linux:**
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
 
 ---
 
@@ -136,7 +150,7 @@ Azure PostgreSQL requiere SSL por defecto. La cadena de conexión debe incluir `
 ```bash
 git clone <repo-url>
 cd zaconato-escuela
-npm install
+bun install   # o npm install
 ```
 
 ### Paso 2: Configurar variables de entorno
@@ -150,24 +164,19 @@ Editar `.env` con tus valores reales (ver sección Variables de Entorno).
 ### Paso 3: Generar el cliente Prisma
 
 ```bash
-npx prisma generate
+bun prisma generate   # o npx prisma generate
 ```
 
 ### Paso 4: Ejecutar migraciones en Azure
 
 ```bash
-npx prisma migrate dev --name init
-```
-
-O si prefieres hacer push directo (sin historial de migraciones):
-```bash
-npx prisma db push
+bun prisma migrate dev --name init   # o npx prisma migrate dev
 ```
 
 ### Paso 5: Crear datos iniciales (seed)
 
 ```bash
-npm run db:seed
+bun run db:seed   # o npm run db:seed
 ```
 
 ### Paso 6: Iniciar servidor de desarrollo
