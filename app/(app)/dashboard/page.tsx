@@ -55,12 +55,16 @@ interface Estudiante {
   nie: string
   grado: string
   seccion: string
+  activo: boolean
   encargado: string | null
   telefono: string | null
   talonarios: Array<{ comprobantes: Array<{ pagado: boolean; tipo: string }> }>
 }
 
-function EstadoBadge({ talonarios }: { talonarios: Estudiante['talonarios'] }) {
+function EstadoBadge({ talonarios, activo }: { talonarios: Estudiante['talonarios'], activo?: boolean }) {
+  if (activo === false) {
+    return <Badge variant="destructive" className="bg-red-500/10 text-red-700 border-red-200">Inactivo</Badge>
+  }
   const talonario = talonarios[0]
   if (!talonario) return <Badge variant="secondary">Sin talonario</Badge>
 
@@ -123,6 +127,7 @@ export default function DashboardPage() {
   const [filterEncargado, setFilterEncargado] = useState('')
   const [filterTelefono, setFilterTelefono] = useState('')
   const [filterEstado, setFilterEstado] = useState('')
+  const [filterAnio, setFilterAnio] = useState(String(new Date().getFullYear()))
 
   const fetchData = useCallback(async () => {
     try {
@@ -134,9 +139,10 @@ export default function DashboardPage() {
       if (filterEncargado) params.set('encargado', filterEncargado)
       if (filterTelefono) params.set('telefono', filterTelefono)
       if (filterEstado) params.set('estado', filterEstado)
+      if (filterAnio) params.set('anio', filterAnio)
 
       const [statsRes, estRes] = await Promise.all([
-        fetch('/api/dashboard/stats'),
+        fetch(`/api/dashboard/stats?anio=${filterAnio}`),
         fetch(`/api/estudiantes?${params.toString()}`),
       ])
       const statsData = await statsRes.json()
@@ -148,7 +154,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
-  }, [filterNombre, filterNie, filterGrado, filterSeccion, filterEncargado, filterTelefono, filterEstado])
+  }, [filterNombre, filterNie, filterGrado, filterSeccion, filterEncargado, filterTelefono, filterEstado, filterAnio])
 
   useEffect(() => {
     fetchData()
@@ -162,6 +168,7 @@ export default function DashboardPage() {
     setFilterEncargado('')
     setFilterTelefono('')
     setFilterEstado('')
+    setFilterAnio(String(new Date().getFullYear()))
   }
 
   const hasActiveFilters = filterNombre || filterNie || filterGrado || filterSeccion || filterEncargado || filterTelefono || filterEstado
@@ -351,8 +358,21 @@ export default function DashboardPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Año Escolar</label>
+                  <Select value={filterAnio} onValueChange={setFilterAnio}>
+                    <SelectTrigger className="h-9 text-sm font-medium">
+                      <SelectValue placeholder="Seleccionar año" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[2024, 2025, 2026, 2027, 2028].map(y => (
+                        <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex items-end pb-0.5">
-                  {hasActiveFilters && (
+                  {(hasActiveFilters || filterAnio !== String(new Date().getFullYear())) && (
                     <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 w-full gap-2 text-muted-foreground">
                       <X className="size-4" />
                       Limpiar filtros
@@ -433,7 +453,7 @@ export default function DashboardPage() {
                         {est.telefono || '—'}
                       </TableCell>
                       <TableCell className="px-4 py-3">
-                        <EstadoBadge talonarios={est.talonarios} />
+                        <EstadoBadge talonarios={est.talonarios} activo={est.activo} />
                       </TableCell>
                       <TableCell className="px-4 py-3 text-right">
                         <div className="flex justify-end">
@@ -481,7 +501,7 @@ export default function DashboardPage() {
                           <p className="font-medium leading-snug">{est.nombre}</p>
                           <p className="mt-0.5 font-mono text-xs text-muted-foreground">{est.nie}</p>
                         </div>
-                        <EstadoBadge talonarios={est.talonarios} />
+                        <EstadoBadge talonarios={est.talonarios} activo={est.activo} />
                       </div>
                       <dl className="grid gap-1.5 text-sm text-muted-foreground">
                         <div className="flex flex-wrap gap-x-2">
