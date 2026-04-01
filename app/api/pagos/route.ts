@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
   const encargado = searchParams.get('encargado')
   const telefono = searchParams.get('telefono')
   const estado = searchParams.get('estado')
+  const anioHeader = searchParams.get('anio')
 
   let fechaInicio: Date | undefined
   let fechaFin: Date | undefined
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
     fechaFin.setHours(23, 59, 59, 999)
   }
 
-  const anioActual = new Date().getFullYear()
+  const anioActual = anioHeader ? parseInt(anioHeader) : new Date().getFullYear()
 
   const pagos = await prisma.pago.findMany({
     where: {

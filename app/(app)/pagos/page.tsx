@@ -93,6 +93,7 @@ export default function PagosPage() {
   const [filterEncargado, setFilterEncargado] = useState('')
   const [filterTelefono, setFilterTelefono] = useState('')
   const [filterEstado, setFilterEstado] = useState('')
+  const [filterAnio, setFilterAnio] = useState(String(new Date().getFullYear()))
 
   const [nie, setNie] = useState('')
   const [estudiante, setEstudiante] = useState<any>(null)
@@ -115,6 +116,7 @@ export default function PagosPage() {
       if (filterEncargado) params.set('encargado', filterEncargado)
       if (filterTelefono) params.set('telefono', filterTelefono)
       if (filterEstado) params.set('estado', filterEstado)
+      if (filterAnio) params.set('anio', filterAnio)
 
       const estudianteId = searchParams.get('estudianteId')
       if (estudianteId) params.set('estudianteId', estudianteId)
@@ -127,7 +129,7 @@ export default function PagosPage() {
     } finally {
       setLoading(false)
     }
-  }, [filterFecha, filterTipo, filterNombre, filterNie, filterGrado, filterSeccion, filterEncargado, filterTelefono, filterEstado, searchParams])
+  }, [filterFecha, filterTipo, filterNombre, filterNie, filterGrado, filterSeccion, filterEncargado, filterTelefono, filterEstado, filterAnio, searchParams])
 
   useEffect(() => { fetchPagos() }, [fetchPagos])
 
@@ -141,6 +143,7 @@ export default function PagosPage() {
     setFilterEncargado('')
     setFilterTelefono('')
     setFilterEstado('')
+    setFilterAnio(String(new Date().getFullYear()))
   }
 
   const hasActiveFilters = filterFecha || filterTipo || filterNombre || filterNie || filterGrado || filterSeccion || filterEncargado || filterTelefono || filterEstado
@@ -334,6 +337,19 @@ export default function PagosPage() {
                       <SelectItem value="AL_DIA">Al día</SelectItem>
                       <SelectItem value="PENDIENTE">Pendiente</SelectItem>
                       <SelectItem value="INCOMPLETO">Incompleto / Atrasado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Año Escolar</label>
+                  <Select value={filterAnio} onValueChange={setFilterAnio}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Seleccionar año" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[2024, 2025, 2026, 2027, 2028].map(y => (
+                        <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
