@@ -12,11 +12,30 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const estudianteId = searchParams.get('estudianteId')
   const anio = searchParams.get('anio')
+  const nombre = searchParams.get('nombre')
+  const nie = searchParams.get('nie')
+  const grado = searchParams.get('grado')
 
   const talonarios = await prisma.talonario.findMany({
     where: {
       ...(estudianteId && { estudianteId }),
-      ...(anio && { anio: parseInt(anio) }),
+      ...(anio && anio !== 'all' && { anio: parseInt(anio) }),
+      ...(nombre && {
+        estudiante: {
+          nombre: { contains: nombre, mode: 'insensitive' }
+        }
+      }),
+      ...(nie && {
+        estudiante: {
+          nie: { contains: nie, mode: 'insensitive' }
+        }
+      }),
+      ...(grado && {
+        OR: [
+          { grado: { contains: grado, mode: 'insensitive' } },
+          { estudiante: { grado: { contains: grado, mode: 'insensitive' } } }
+        ]
+      }),
     },
     include: {
       estudiante: true,

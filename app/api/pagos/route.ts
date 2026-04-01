@@ -10,6 +10,8 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url)
   const fecha = searchParams.get('fecha')
+  const desde = searchParams.get('desde')
+  const hasta = searchParams.get('hasta')
   const tipo = searchParams.get('tipo')
   const estudianteId = searchParams.get('estudianteId')
   const nombre = searchParams.get('nombre')
@@ -23,7 +25,13 @@ export async function GET(req: NextRequest) {
 
   let fechaInicio: Date | undefined
   let fechaFin: Date | undefined
-  if (fecha) {
+
+  if (desde && hasta) {
+    fechaInicio = new Date(desde)
+    fechaInicio.setHours(0, 0, 0, 0)
+    fechaFin = new Date(hasta)
+    fechaFin.setHours(23, 59, 59, 999)
+  } else if (fecha) {
     fechaInicio = new Date(fecha)
     fechaInicio.setHours(0, 0, 0, 0)
     fechaFin = new Date(fecha)

@@ -44,7 +44,9 @@ export default function TalonariosPage() {
   const [seccion, setSeccion] = useState('')
   const [saving, setSaving] = useState(false)
   const [filterAnio, setFilterAnio] = useState('')
-
+  const [filterNombre, setFilterNombre] = useState('')
+  const [filterNie, setFilterNie] = useState('')
+  const [filterGrado, setFilterGrado] = useState('')
 
   const estudianteId = searchParams.get('estudianteId')
 
@@ -54,7 +56,11 @@ export default function TalonariosPage() {
       const params = new URLSearchParams()
       if (estudianteId) params.set('estudianteId', estudianteId)
       if (filterAnio) params.set('anio', filterAnio)
-      const res = await fetch(`/api/talonarios?${params}`)
+      if (filterNombre) params.set('nombre', filterNombre)
+      if (filterNie) params.set('nie', filterNie)
+      if (filterGrado) params.set('grado', filterGrado)
+
+      const res = await fetch(`/api/talonarios?${params.toString()}`)
       const data = await res.json()
       setTalonarios(Array.isArray(data) ? data : [])
     } catch {
@@ -62,9 +68,16 @@ export default function TalonariosPage() {
     } finally {
       setLoading(false)
     }
-  }, [estudianteId, filterAnio])
+  }, [estudianteId, filterAnio, filterNombre, filterNie, filterGrado])
 
   useEffect(() => { fetchTalonarios() }, [fetchTalonarios])
+
+  const clearFilters = () => {
+    setFilterAnio('')
+    setFilterNombre('')
+    setFilterNie('')
+    setFilterGrado('')
+  }
 
   const buscarEstudiante = async () => {
     if (!nie.trim()) return
@@ -128,14 +141,64 @@ export default function TalonariosPage() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              {talonarios.length} talonario{talonarios.length !== 1 ? 's' : ''}
+            <p className="text-xs text-muted-foreground font-medium">
+              {talonarios.length} talonario{talonarios.length !== 1 ? 's' : ''} encontrados
             </p>
           </div>
           <Button size="sm" onClick={() => setShowForm(!showForm)}>
-            <Plus className="size-4" /> Nuevo Talonario
+            <Plus className="size-4" /> {showForm ? 'Cancelar' : 'Nuevo Talonario'}
           </Button>
         </div>
+
+        {/* Search and Filters Section */}
+        <Card className="bg-muted/30 border-dashed">
+          <CardContent className="p-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 items-end">
+              <div className="space-y-1.5 flex-1">
+                <Label htmlFor="search-nombre" className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Nombre Estudiante</Label>
+                <Input
+                  id="search-nombre"
+                  placeholder="Buscar por nombre..."
+                  value={filterNombre}
+                  onChange={e => setFilterNombre(e.target.value)}
+                  className="h-8 text-xs bg-background"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="search-nie" className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">NIE</Label>
+                <Input
+                  id="search-nie"
+                  placeholder="NIE..."
+                  value={filterNie}
+                  onChange={e => setFilterNie(e.target.value)}
+                  className="h-8 text-xs font-mono bg-background"
+                  maxLength={8}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="search-grado" className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Grado</Label>
+                <Select value={filterGrado || 'all'} onValueChange={v => setFilterGrado(v === 'all' ? '' : v)}>
+                  <SelectTrigger className="h-8 text-xs bg-background">
+                    <SelectValue placeholder="Todos los grados" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los grados</SelectItem>
+                    {GRADOS.map(g => (
+                      <SelectItem key={g} value={g}>{g}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                {(filterNombre || filterNie || filterGrado || (filterAnio && filterAnio !== '')) && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 text-[10px] font-semibold uppercase w-full">
+                    Limpiar Filtros
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {showForm && (
           <Card>

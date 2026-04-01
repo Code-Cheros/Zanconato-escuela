@@ -37,6 +37,8 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty'
 import { cn } from '@/lib/utils'
+import { DateRangePicker } from '@/components/ui/date-range-picker'
+import { DateRange } from 'react-day-picker'
 
 interface Pago {
   id: string
@@ -82,7 +84,7 @@ export default function PagosPage() {
   const [showFilters, setShowFilters] = useState(false)
   
   // General filters
-  const [filterFecha, setFilterFecha] = useState('')
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
   const [filterTipo, setFilterTipo] = useState('')
   
   // Student filters
@@ -107,7 +109,8 @@ export default function PagosPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-      if (filterFecha) params.set('fecha', filterFecha)
+      if (dateRange?.from) params.set('desde', dateRange.from.toISOString())
+      if (dateRange?.to) params.set('hasta', dateRange.to.toISOString())
       if (filterTipo) params.set('tipo', filterTipo)
       if (filterNombre) params.set('nombre', filterNombre)
       if (filterNie) params.set('nie', filterNie)
@@ -129,12 +132,12 @@ export default function PagosPage() {
     } finally {
       setLoading(false)
     }
-  }, [filterFecha, filterTipo, filterNombre, filterNie, filterGrado, filterSeccion, filterEncargado, filterTelefono, filterEstado, filterAnio, searchParams])
+  }, [dateRange, filterTipo, filterNombre, filterNie, filterGrado, filterSeccion, filterEncargado, filterTelefono, filterEstado, filterAnio, searchParams])
 
   useEffect(() => { fetchPagos() }, [fetchPagos])
 
   const clearFilters = () => {
-    setFilterFecha('')
+    setDateRange(undefined)
     setFilterTipo('')
     setFilterNombre('')
     setFilterNie('')
@@ -146,7 +149,7 @@ export default function PagosPage() {
     setFilterAnio(String(new Date().getFullYear()))
   }
 
-  const hasActiveFilters = filterFecha || filterTipo || filterNombre || filterNie || filterGrado || filterSeccion || filterEncargado || filterTelefono || filterEstado
+  const hasActiveFilters = dateRange?.from || filterTipo || filterNombre || filterNie || filterGrado || filterSeccion || filterEncargado || filterTelefono || filterEstado
 
   const buscarEstudiante = async () => {
     if (!nie.trim()) return
@@ -208,11 +211,9 @@ export default function PagosPage() {
         <Card className="py-0">
           <CardHeader className="flex flex-col gap-4 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
              <div className="flex items-center gap-2">
-                <Input
-                  type="date"
-                  value={filterFecha}
-                  onChange={e => setFilterFecha(e.target.value)}
-                  className="w-auto h-9 text-xs"
+                <DateRangePicker 
+                  value={dateRange} 
+                  onChange={setDateRange} 
                 />
                 <Select value={filterTipo || 'all'} onValueChange={v => setFilterTipo(v === 'all' ? '' : v)}>
                   <SelectTrigger className="w-40 h-9 text-xs">
@@ -233,7 +234,7 @@ export default function PagosPage() {
                 >
                   <Filter className="size-4" />
                   {showFilters ? 'Ocultar Filtros' : 'Más Filtros'}
-                  {hasActiveFilters && !filterFecha && !filterTipo && (
+                  {hasActiveFilters && !dateRange?.from && !filterTipo && (
                     <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px] uppercase">
                       Activos
                     </Badge>
