@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 
 export default function EditarEstudiantePage() {
   const { id } = useParams()
@@ -32,6 +33,7 @@ export default function EditarEstudiantePage() {
     seccion: '',
     encargado: '',
     telefono: '',
+    activo: true,
   })
 
   useEffect(() => {
@@ -46,6 +48,7 @@ export default function EditarEstudiantePage() {
             seccion: d.seccion || '',
             encargado: d.encargado || '',
             telefono: d.telefono || '',
+            activo: d.activo ?? true,
           })
         }
         setLoading(false)
@@ -67,6 +70,10 @@ export default function EditarEstudiantePage() {
 
   const handleSelect = (field: keyof typeof form) => (value: string) => {
     setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleSwitchChange = (checked: boolean) => {
+    setForm(prev => ({ ...prev, activo: checked }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -221,6 +228,22 @@ export default function EditarEstudiantePage() {
                       placeholder="Ej: 71234567"
                       maxLength={8}
                       inputMode="numeric"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 p-3 rounded-lg border bg-muted/30 flex items-center justify-between gap-4">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="activo" className="text-sm font-semibold">Estado del Estudiante</Label>
+                      <p className="text-xs text-muted-foreground">
+                        {form.activo 
+                          ? 'Activo: Se pueden generar nuevos talonarios y registrar pagos.' 
+                          : 'Inactivo: No se podrá generar nuevos talonarios.'}
+                      </p>
+                    </div>
+                    <Switch 
+                      id="activo" 
+                      checked={form.activo} 
+                      onCheckedChange={handleSwitchChange}
                     />
                   </div>
                 </div>
