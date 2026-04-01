@@ -76,7 +76,11 @@ export default function TalonarioDetailPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title={`Talonario ${talonario.anio}`} subtitle={talonario.estudiante.nombre} />
+      <Header 
+        title={`Talonario ${talonario.anio}`} 
+        subtitle={`${talonario.estudiante.nombre} — ${talonario.grado || talonario.estudiante.grado} ${talonario.seccion || talonario.estudiante.seccion}`} 
+      />
+
       <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Button variant="ghost" size="sm" className="gap-1.5 px-0 text-muted-foreground hover:text-foreground" asChild>

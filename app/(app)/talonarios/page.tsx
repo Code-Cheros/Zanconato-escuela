@@ -5,8 +5,9 @@ import { useSearchParams } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import { Plus, BookOpen, Printer, CheckCircle, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { formatCurrency, TIPO_PAGO_LABELS } from '@/lib/utils'
+import { formatCurrency, TIPO_PAGO_LABELS, GRADOS, SECCIONES } from '@/lib/utils'
 import Link from 'next/link'
+
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,6 +22,15 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
+
 
 export default function TalonariosPage() {
   const searchParams = useSearchParams()
@@ -29,8 +39,12 @@ export default function TalonariosPage() {
   const [showForm, setShowForm] = useState(false)
   const [nie, setNie] = useState('')
   const [estudiante, setEstudiante] = useState<any>(null)
-  const [anio, setAnio] = useState(String(new Date().getFullYear()))
+  const [anio, setAnio] = useState(String(new Date().getFullYear() + 1))
+  const [grado, setGrado] = useState('')
+  const [seccion, setSeccion] = useState('')
   const [saving, setSaving] = useState(false)
+  const [filterAnio, setFilterAnio] = useState('')
+
 
   const estudianteId = searchParams.get('estudianteId')
 
@@ -39,6 +53,7 @@ export default function TalonariosPage() {
     try {
       const params = new URLSearchParams()
       if (estudianteId) params.set('estudianteId', estudianteId)
+      if (filterAnio) params.set('anio', filterAnio)
       const res = await fetch(`/api/talonarios?${params}`)
       const data = await res.json()
       setTalonarios(Array.isArray(data) ? data : [])
@@ -47,7 +62,7 @@ export default function TalonariosPage() {
     } finally {
       setLoading(false)
     }
-  }, [estudianteId])
+  }, [estudianteId, filterAnio])
 
   useEffect(() => { fetchTalonarios() }, [fetchTalonarios])
 
@@ -58,10 +73,15 @@ export default function TalonariosPage() {
       const data = await res.json()
       if (data.length > 0) {
         setEstudiante(data[0])
+        setGrado(data[0].grado)
+        setSeccion(data[0].seccion)
       } else {
         toast.error('Estudiante no encontrado')
         setEstudiante(null)
+        setGrado('')
+        setSeccion('')
       }
+
     } catch { toast.error('Error buscando') }
   }
 
@@ -72,8 +92,14 @@ export default function TalonariosPage() {
       const res = await fetch('/api/talonarios', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estudianteId: estudiante.id, anio }),
+        body: JSON.stringify({ 
+          estudianteId: estudiante.id, 
+          anio,
+          grado,
+          seccion
+        }),
       })
+
       const data = await res.json()
       if (res.ok) {
         toast.success('Talonario creado exitosamente')
@@ -89,11 +115,24 @@ export default function TalonariosPage() {
     <div className="flex flex-col h-full">
       <Header title="Talonarios" subtitle="Gestión de comprobantes de pago" />
       <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-5">
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            {talonarios.length} talonario{talonarios.length !== 1 ? 's' : ''}
-          </p>
-          <Button onClick={() => setShowForm(!showForm)}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <Select value={filterAnio} onValueChange={setFilterAnio}>
+              <SelectTrigger className="w-32 h-9 text-xs">
+                <SelectValue placeholder="Todos los años" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los años</SelectItem>
+                {[2024, 2025, 2026, 2027, 2028].map(y => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {talonarios.length} talonario{talonarios.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <Button size="sm" onClick={() => setShowForm(!showForm)}>
             <Plus className="size-4" /> Nuevo Talonario
           </Button>
         </div>
@@ -121,7 +160,12 @@ export default function TalonariosPage() {
                     </Button>
                   </div>
                   {estudiante && (
-                    <p className="text-xs text-emerald-600 font-medium">✓ {estudiante.nombre}</p>
+                    <p className={cn(
+                      "text-xs font-medium",
+                      estudiante.activo === false ? "text-destructive" : "text-emerald-600"
+                    )}>
+                      {estudiante.activo === false ? '⚠ Estudiante Inactivo' : '✓'} {estudiante.nombre}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-1.5">
@@ -132,13 +176,40 @@ export default function TalonariosPage() {
                     value={anio}
                     onChange={e => setAnio(e.target.value)}
                     min="2020"
-                    max="2030"
+                    max="2035"
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="grado">Actualizar Grado</Label>
+                  <Select value={grado} onValueChange={setGrado}>
+                    <SelectTrigger id="grado" className="w-full">
+                      <SelectValue placeholder="Seleccionar grado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GRADOS.map(g => (
+                        <SelectItem key={g} value={g}>{g}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="seccion">Actualizar Sección</Label>
+                  <Select value={seccion} onValueChange={setSeccion}>
+                    <SelectTrigger id="seccion" className="w-full">
+                      <SelectValue placeholder="Seleccionar sección" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SECCIONES.map(s => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
               </div>
             </CardContent>
             <CardFooter className="gap-3 border-t pt-4">
-              <Button onClick={handleCrear} disabled={saving || !estudiante}>
+              <Button onClick={handleCrear} disabled={saving || !estudiante || estudiante.activo === false}>
                 {saving ? 'Creando...' : 'Generar Talonario'}
               </Button>
               <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
@@ -179,8 +250,9 @@ export default function TalonariosPage() {
                     <div className="min-w-0">
                       <p className="font-semibold text-sm truncate">{tal.estudiante.nombre}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {tal.estudiante.grado} {tal.estudiante.seccion} · NIE: {tal.estudiante.nie}
+                        {tal.grado || tal.estudiante.grado} {tal.seccion || tal.estudiante.seccion} · NIE: {tal.estudiante.nie}
                       </p>
+
                     </div>
                     <Badge variant="secondary" className="shrink-0 font-bold">{tal.anio}</Badge>
                   </CardHeader>

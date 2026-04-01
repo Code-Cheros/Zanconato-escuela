@@ -8,7 +8,9 @@ export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const anioActual = new Date().getFullYear()
+  const { searchParams } = new URL(req.url)
+  const anio = searchParams.get('anio')
+  const anioActual = anio ? parseInt(anio) : new Date().getFullYear()
   const mesActual = new Date().getMonth()
 
   const [
@@ -33,14 +35,14 @@ export async function GET(req: NextRequest) {
       _sum: { monto: true },
       where: {
         fecha: {
-          gte: new Date(anioActual, mesActual, 1),
-          lte: new Date(anioActual, mesActual + 1, 0, 23, 59, 59),
+          gte: new Date(new Date().getFullYear(), mesActual, 1),
+          lte: new Date(new Date().getFullYear(), mesActual + 1, 0, 23, 59, 59),
         },
       },
     }),
   ])
 
-  // Estudiantes al día: tienen todas sus colegiaturas del año pagadas
+  // Estudiantes al día: tienen todas sus colegiaturas del año seleccionado pagadas
   const estudiantesAlDia = await prisma.estudiante.count({
     where: {
       talonarios: {
