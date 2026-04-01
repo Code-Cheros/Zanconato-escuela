@@ -2,7 +2,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import Header from '@/components/layout/Header'
-import { Users, CheckCircle, FileText, TrendingUp, Plus, Search, Eye, CreditCard, Filter, X } from 'lucide-react'
+import { Users, CheckCircle, FileText, TrendingUp, Plus, Search, Eye, CreditCard, Filter, X, Calendar } from 'lucide-react'
 import { formatCurrency, GRADOS, SECCIONES } from '@/lib/utils'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -113,13 +113,20 @@ function EstudianteActions({ estudianteId }: { estudianteId: string }) {
   )
 }
 
+type Periodo = 'mes' | 'anual' | 'personalizado'
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([])
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
 
-  // Filters
+  // Period filter
+  const [periodo, setPeriodo] = useState<Periodo>('mes')
+  const [customDesde, setCustomDesde] = useState('')
+  const [customHasta, setCustomHasta] = useState('')
+
+  // Student filters
   const [filterNombre, setFilterNombre] = useState('')
   const [filterNie, setFilterNie] = useState('')
   const [filterGrado, setFilterGrado] = useState('')
@@ -141,8 +148,27 @@ export default function DashboardPage() {
       if (filterEstado) params.set('estado', filterEstado)
       if (filterAnio) params.set('anio', filterAnio)
 
+      // Build stats query params based on period
+      const statsParams = new URLSearchParams()
+      statsParams.set('anio', filterAnio)
+      if (periodo === 'mes') {
+        const now = new Date()
+        const y = now.getFullYear(), m = now.getMonth()
+        const desde = `${y}-${String(m + 1).padStart(2, '0')}-01`
+        const lastDay = new Date(y, m + 1, 0).getDate()
+        const hasta = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+        statsParams.set('desde', desde)
+        statsParams.set('hasta', hasta)
+      } else if (periodo === 'anual') {
+        statsParams.set('desde', `${filterAnio}-01-01`)
+        statsParams.set('hasta', `${filterAnio}-12-31`)
+      } else if (periodo === 'personalizado' && customDesde && customHasta) {
+        statsParams.set('desde', customDesde)
+        statsParams.set('hasta', customHasta)
+      }
+
       const [statsRes, estRes] = await Promise.all([
-        fetch(`/api/dashboard/stats?anio=${filterAnio}`),
+        fetch(`/api/dashboard/stats?${statsParams.toString()}`),
         fetch(`/api/estudiantes?${params.toString()}`),
       ])
       const statsData = await statsRes.json()
@@ -154,7 +180,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
-  }, [filterNombre, filterNie, filterGrado, filterSeccion, filterEncargado, filterTelefono, filterEstado, filterAnio])
+  }, [filterNombre, filterNie, filterGrado, filterSeccion, filterEncargado, filterTelefono, filterEstado, filterAnio, periodo, customDesde, customHasta])
 
   useEffect(() => {
     fetchData()
@@ -194,7 +220,7 @@ export default function DashboardPage() {
           iconWrap: 'bg-violet-500 text-white',
         },
         {
-          label: 'Ingresos del Mes',
+          label: periodo === 'mes' ? 'Ingresos del Mes' : periodo === 'anual' ? `Ingresos ${filterAnio}` : 'Ingresos del Período',
           value: formatCurrency(stats.ingresosMes),
           icon: TrendingUp,
           iconWrap: 'bg-amber-500 text-white',
@@ -207,6 +233,51 @@ export default function DashboardPage() {
       <Header title="Dashboard" subtitle="Resumen general del sistema" />
 
       <div className="flex-1 space-y-4 p-4 sm:space-y-6 sm:p-6">
+        {/* Period Selector */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
+            {(['mes', 'anual', 'personalizado'] as Periodo[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriodo(p)}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-xs font-medium transition-colors capitalize',
+                  periodo === p
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {p === 'mes' ? 'Mes actual' : p === 'anual' ? 'Anual' : 'Personalizado'}
+              </button>
+            ))}
+          </div>
+
+          {periodo === 'personalizado' && (
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="size-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Desde</span>
+                <input
+                  type="date"
+                  value={customDesde}
+                  onChange={e => setCustomDesde(e.target.value)}
+                  className="h-8 rounded-md border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Hasta</span>
+                <input
+                  type="date"
+                  value={customHasta}
+                  onChange={e => setCustomHasta(e.target.value)}
+                  min={customDesde}
+                  className="h-8 rounded-md border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Stats */}
         {loading ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">

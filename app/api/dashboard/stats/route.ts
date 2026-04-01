@@ -10,18 +10,36 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url)
   const anio = searchParams.get('anio')
+  const desde = searchParams.get('desde')
+  const hasta = searchParams.get('hasta')
+
   const anioActual = anio ? parseInt(anio) : new Date().getFullYear()
-  const mesActual = new Date().getMonth()
+
+  // Build date range for income stats
+  let fechaDesde: Date
+  let fechaHasta: Date
+
+  if (desde && hasta) {
+    fechaDesde = new Date(desde + 'T00:00:00')
+    fechaHasta = new Date(hasta + 'T23:59:59')
+  } else if (anio) {
+    // Annual mode: full year
+    fechaDesde = new Date(anioActual, 0, 1)
+    fechaHasta = new Date(anioActual, 11, 31, 23, 59, 59)
+  } else {
+    // Default: current month
+    const now = new Date()
+    fechaDesde = new Date(now.getFullYear(), now.getMonth(), 1)
+    fechaHasta = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+  }
 
   const [
     totalEstudiantes,
-    totalComprobantes,
     comprobantesEmitidos,
     pagosHoy,
-    ingresosMes,
+    ingresosPeriodo,
   ] = await Promise.all([
     prisma.estudiante.count(),
-    prisma.comprobante.count(),
     prisma.comprobante.count({ where: { pagado: true } }),
     prisma.pago.count({
       where: {
@@ -35,14 +53,13 @@ export async function GET(req: NextRequest) {
       _sum: { monto: true },
       where: {
         fecha: {
-          gte: new Date(new Date().getFullYear(), mesActual, 1),
-          lte: new Date(new Date().getFullYear(), mesActual + 1, 0, 23, 59, 59),
+          gte: fechaDesde,
+          lte: fechaHasta,
         },
       },
     }),
   ])
 
-  // Estudiantes al día: tienen todas sus colegiaturas del año seleccionado pagadas
   const estudiantesAlDia = await prisma.estudiante.count({
     where: {
       talonarios: {
@@ -66,6 +83,6 @@ export async function GET(req: NextRequest) {
     estudiantesAlDia,
     comprobantesEmitidos,
     pagosHoy,
-    ingresosMes: ingresosMes._sum.monto || 0,
+    ingresosMes: ingresosPeriodo._sum.monto || 0,
   })
 }
