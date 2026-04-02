@@ -6,6 +6,8 @@ import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { MESES } from '@/lib/utils'
 
+const prismaCompat = prisma as any
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -120,6 +122,17 @@ export async function POST(req: NextRequest) {
     }
 
     const anioActual = new Date().getFullYear()
+    const config = await prismaCompat.configuracionSistema.upsert({
+      where: { id: 'global' },
+      update: {},
+      create: {
+        id: 'global',
+        montoMatricula: 10,
+        montoMensualidad: 20,
+        montoMora: 0,
+        usarMora: false,
+      },
+    })
 
     const resultado = await prisma.$transaction(async (tx: any) => {
       const estudiante = await tx.estudiante.create({
@@ -145,11 +158,11 @@ export async function POST(req: NextRequest) {
 
       // Comprobantes en orden fijo
       const comprobantes = [
-        { tipo: 'MATRICULA', monto: 10.00, mes: null, orden: 1 },
+        { tipo: 'MATRICULA', monto: config.montoMatricula, mes: null, orden: 1 },
         { tipo: 'PAPELERIA', monto: 15.00, mes: null, orden: 2 },
         ...MESES.map((mes, i) => ({
           tipo: 'COLEGIATURA',
-          monto: 20.00,
+          monto: config.montoMensualidad,
           mes,
           orden: 3 + i,
         })),

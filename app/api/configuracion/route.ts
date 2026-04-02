@@ -1,0 +1,83 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+
+const prismaCompat = prisma as any
+
+async function getOrCreateConfig() {
+  return prismaCompat.configuracionSistema.upsert({
+    where: { id: 'global' },
+    update: {},
+    create: {
+      id: 'global',
+      montoMatricula: 10,
+      montoMensualidad: 20,
+      montoMora: 0,
+      usarMora: false,
+    },
+  })
+}
+
+export async function GET() {
+  const session = await getServerSession(authOptions)
+  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+  const config = await getOrCreateConfig()
+  return NextResponse.json(config)
+}
+
+export async function PUT(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+  const rol = (session.user as any).rol
+  if (rol !== 'ADMINISTRATIVO') {
+    return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+  }
+
+  try {
+    const body = await req.json()
+
+    const logoUrl = typeof body.logoUrl === 'string' ? body.logoUrl.trim() : ''
+    const montoMatricula = Number(body.montoMatricula)
+    const montoMensualidad = Number(body.montoMensualidad)
+    const montoMora = body.montoMora === '' || body.montoMora === null || body.montoMora === undefined
+      ? 0
+      : Number(body.montoMora)
+    const usarMora = Boolean(body.usarMora)
+
+    if (!Number.isFinite(montoMatricula) || montoMatricula < 0) {
+      return NextResponse.json({ error: 'Monto de matrícula inválido' }, { status: 400 })
+    }
+    if (!Number.isFinite(montoMensualidad) || montoMensualidad < 0) {
+      return NextResponse.json({ error: 'Monto de mensualidad inválido' }, { status: 400 })
+    }
+    if (!Number.isFinite(montoMora) || montoMora < 0) {
+      return NextResponse.json({ error: 'Monto de mora inválido' }, { status: 400 })
+    }
+
+    const config = await prismaCompat.configuracionSistema.upsert({
+      where: { id: 'global' },
+      update: {
+        logoUrl: logoUrl || null,
+        montoMatricula,
+        montoMensualidad,
+        montoMora,
+        usarMora,
+      },
+      create: {
+        id: 'global',
+        logoUrl: logoUrl || null,
+        montoMatricula,
+        montoMensualidad,
+        montoMora,
+        usarMora,
+      },
+    })
+
+    return NextResponse.json(config)
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Error interno' }, { status: 500 })
+  }
+}

@@ -3,6 +3,7 @@ import { PrismaClient, Rol } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
+const prismaCompat = prisma as any
 
 async function main() {
   const passwordHash = await bcrypt.hash('admin123', 12)
@@ -43,10 +44,23 @@ async function main() {
     },
   })
 
+  await prismaCompat.configuracionSistema.upsert({
+    where: { id: 'global' },
+    update: {},
+    create: {
+      id: 'global',
+      montoMatricula: 10,
+      montoMensualidad: 20,
+      montoMora: 0,
+      usarMora: false,
+    },
+  })
+
   console.log('✅ Usuarios seed creados:')
   console.log(`   Admin: admin@zaconato.edu.sv / admin123`)
   console.log(`   Colector: colector@zaconato.edu.sv / colector123`)
   console.log(`   Matrícula: matricula@zaconato.edu.sv / matricula123`)
+  console.log('✅ Configuración del sistema inicial creada')
 }
 
 main()

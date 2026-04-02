@@ -91,3 +91,13 @@ model PasswordResetToken {
 
   @@unique([email, token])
 }
+
+model ConfiguracionSistema {
+  id               String   @id @default("global")
+  logoUrl          String?
+  montoMatricula   Float    @default(10)
+  montoMensualidad Float    @default(20)
+  montoMora        Float?   @default(0)
+  usarMora         Boolean  @default(false)
+  actualizadoEn    DateTime @updatedAt
+}

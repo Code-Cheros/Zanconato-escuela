@@ -4,6 +4,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+const prismaCompat = prisma as any
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -28,6 +30,18 @@ export async function GET(req: NextRequest) {
       comprobante: { select: { mes: true } },
     },
     orderBy: { fecha: 'asc' },
+  })
+
+  const config = await prismaCompat.configuracionSistema.upsert({
+    where: { id: 'global' },
+    update: {},
+    create: {
+      id: 'global',
+      montoMatricula: 10,
+      montoMensualidad: 20,
+      montoMora: 0,
+      usarMora: false,
+    },
   })
 
   const resumen: Record<string, number> = { MATRICULA: 0, PAPELERIA: 0, COLEGIATURA: 0, ALIMENTACION: 0 }
@@ -82,6 +96,7 @@ export async function GET(req: NextRequest) {
 </head>
 <body>
   <div class="header">
+    ${config.logoUrl ? `<img src="${config.logoUrl}" alt="Logo" style="height:56px;object-fit:contain;margin-bottom:10px;" />` : ''}
     <h1>Complejo Educativo Católico Zaconato</h1>
     <h2>Reporte Diario de Ingresos</h2>
   </div>

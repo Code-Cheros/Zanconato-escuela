@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { MESES } from '@/lib/utils'
 
+const prismaCompat = prisma as any
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -90,6 +92,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ya existe talonario para ese año' }, { status: 409 })
     }
 
+    const config = await prismaCompat.configuracionSistema.upsert({
+      where: { id: 'global' },
+      update: {},
+      create: {
+        id: 'global',
+        montoMatricula: 10,
+        montoMensualidad: 20,
+        montoMora: 0,
+        usarMora: false,
+      },
+    })
+
     const talonario = await prisma.$transaction(async (tx) => {
       // Actualizar grado/sección del estudiante si se proporcionan
       if (grado || seccion) {
@@ -113,11 +127,11 @@ export async function POST(req: NextRequest) {
 
 
       const comprobantes = [
-        { tipo: 'MATRICULA', monto: montoMatricula || 10.00, mes: null, orden: 1 },
+        { tipo: 'MATRICULA', monto: montoMatricula || config.montoMatricula, mes: null, orden: 1 },
         { tipo: 'PAPELERIA', monto: montoPapeleria || 15.00, mes: null, orden: 2 },
         ...MESES.map((mes, i) => ({
           tipo: 'COLEGIATURA',
-          monto: montoColegiatura || 20.00,
+          monto: montoColegiatura || config.montoMensualidad,
           mes,
           orden: 3 + i,
         })),
