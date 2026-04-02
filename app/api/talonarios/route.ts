@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url)
   const estudianteId = searchParams.get('estudianteId')
-  const anio = searchParams.get('anio')
+  const anioParam = searchParams.get('anio')
+  const anio = anioParam || String(new Date().getFullYear())
   const nombre = searchParams.get('nombre')
   const nie = searchParams.get('nie')
   const grado = searchParams.get('grado')

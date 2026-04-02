@@ -39,11 +39,11 @@ export default function TalonariosPage() {
   const [showForm, setShowForm] = useState(false)
   const [nie, setNie] = useState('')
   const [estudiante, setEstudiante] = useState<any>(null)
-  const [anio, setAnio] = useState(String(new Date().getFullYear() + 1))
+  const [anio, setAnio] = useState(String(new Date().getFullYear()))
   const [grado, setGrado] = useState('')
   const [seccion, setSeccion] = useState('')
   const [saving, setSaving] = useState(false)
-  const [filterAnio, setFilterAnio] = useState('')
+  const [filterAnio, setFilterAnio] = useState(String(new Date().getFullYear()))
   const [filterNombre, setFilterNombre] = useState('')
   const [filterNie, setFilterNie] = useState('')
   const [filterGrado, setFilterGrado] = useState('')
@@ -73,7 +73,7 @@ export default function TalonariosPage() {
   useEffect(() => { fetchTalonarios() }, [fetchTalonarios])
 
   const clearFilters = () => {
-    setFilterAnio('')
+    setFilterAnio(String(new Date().getFullYear()))
     setFilterNombre('')
     setFilterNie('')
     setFilterGrado('')
@@ -136,9 +136,10 @@ export default function TalonariosPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los años</SelectItem>
-                {[2024, 2025, 2026, 2027, 2028].map(y => (
-                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                ))}
+                {[ -1, 0, 1, 2].map(offset => {
+                  const y = new Date().getFullYear() + offset
+                  return <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                })}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground font-medium">
