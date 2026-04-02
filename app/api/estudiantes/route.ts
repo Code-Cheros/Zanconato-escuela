@@ -128,7 +128,9 @@ export async function POST(req: NextRequest) {
       create: {
         id: 'global',
         montoMatricula: 10,
+        montoPapeleria: 15,
         montoMensualidad: 20,
+        montoAlimentacion: 10,
         montoMora: 0,
         usarMora: false,
       },
@@ -159,18 +161,17 @@ export async function POST(req: NextRequest) {
       // Comprobantes en orden fijo
       const comprobantes = [
         { tipo: 'MATRICULA', monto: config.montoMatricula, mes: null, orden: 1 },
-        { tipo: 'PAPELERIA', monto: 15.00, mes: null, orden: 2 },
         ...MESES.map((mes, i) => ({
           tipo: 'COLEGIATURA',
           monto: config.montoMensualidad,
           mes,
-          orden: 3 + i,
+          orden: 2 + i,
         })),
         ...MESES.map((mes, i) => ({
           tipo: 'ALIMENTACION',
-          monto: 10.00,
+          monto: config.montoAlimentacion,
           mes,
-          orden: 13 + i,
+          orden: 12 + i,
         })),
       ]
 

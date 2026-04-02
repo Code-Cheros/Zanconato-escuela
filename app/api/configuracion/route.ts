@@ -12,7 +12,9 @@ async function getOrCreateConfig() {
     create: {
       id: 'global',
       montoMatricula: 10,
+      montoPapeleria: 15,
       montoMensualidad: 20,
+      montoAlimentacion: 10,
       montoMora: 0,
       usarMora: false,
     },
@@ -41,7 +43,9 @@ export async function PUT(req: NextRequest) {
 
     const logoUrl = typeof body.logoUrl === 'string' ? body.logoUrl.trim() : ''
     const montoMatricula = Number(body.montoMatricula)
+    const montoPapeleria = Number(body.montoPapeleria)
     const montoMensualidad = Number(body.montoMensualidad)
+    const montoAlimentacion = Number(body.montoAlimentacion)
     const montoMora = body.montoMora === '' || body.montoMora === null || body.montoMora === undefined
       ? 0
       : Number(body.montoMora)
@@ -50,8 +54,14 @@ export async function PUT(req: NextRequest) {
     if (!Number.isFinite(montoMatricula) || montoMatricula < 0) {
       return NextResponse.json({ error: 'Monto de matrícula inválido' }, { status: 400 })
     }
+    if (!Number.isFinite(montoPapeleria) || montoPapeleria < 0) {
+      return NextResponse.json({ error: 'Monto de papelería inválido' }, { status: 400 })
+    }
     if (!Number.isFinite(montoMensualidad) || montoMensualidad < 0) {
       return NextResponse.json({ error: 'Monto de mensualidad inválido' }, { status: 400 })
+    }
+    if (!Number.isFinite(montoAlimentacion) || montoAlimentacion < 0) {
+      return NextResponse.json({ error: 'Monto de alimentación inválido' }, { status: 400 })
     }
     if (!Number.isFinite(montoMora) || montoMora < 0) {
       return NextResponse.json({ error: 'Monto de mora inválido' }, { status: 400 })
@@ -62,7 +72,9 @@ export async function PUT(req: NextRequest) {
       update: {
         logoUrl: logoUrl || null,
         montoMatricula,
+        montoPapeleria,
         montoMensualidad,
+        montoAlimentacion,
         montoMora,
         usarMora,
       },
@@ -70,7 +82,9 @@ export async function PUT(req: NextRequest) {
         id: 'global',
         logoUrl: logoUrl || null,
         montoMatricula,
+        montoPapeleria,
         montoMensualidad,
+        montoAlimentacion,
         montoMora,
         usarMora,
       },

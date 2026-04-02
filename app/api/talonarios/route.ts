@@ -59,7 +59,6 @@ export async function POST(req: NextRequest) {
       estudianteId, 
       anio, 
       montoMatricula, 
-      montoPapeleria, 
       montoColegiatura, 
       montoAlimentacion, 
       incluirAlimentacion,
@@ -98,7 +97,9 @@ export async function POST(req: NextRequest) {
       create: {
         id: 'global',
         montoMatricula: 10,
+        montoPapeleria: 15,
         montoMensualidad: 20,
+        montoAlimentacion: 10,
         montoMora: 0,
         usarMora: false,
       },
@@ -128,19 +129,18 @@ export async function POST(req: NextRequest) {
 
       const comprobantes = [
         { tipo: 'MATRICULA', monto: montoMatricula || config.montoMatricula, mes: null, orden: 1 },
-        { tipo: 'PAPELERIA', monto: montoPapeleria || 15.00, mes: null, orden: 2 },
         ...MESES.map((mes, i) => ({
           tipo: 'COLEGIATURA',
           monto: montoColegiatura || config.montoMensualidad,
           mes,
-          orden: 3 + i,
+          orden: 2 + i,
         })),
         ...(incluirAlimentacion !== false
           ? MESES.map((mes, i) => ({
               tipo: 'ALIMENTACION',
-              monto: montoAlimentacion || 10.00,
+              monto: montoAlimentacion || config.montoAlimentacion || 10.00,
               mes,
-              orden: 13 + i,
+              orden: 12 + i,
             }))
           : []),
       ]

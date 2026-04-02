@@ -13,7 +13,9 @@ import { Switch } from '@/components/ui/switch'
 interface Configuracion {
   logoUrl: string | null
   montoMatricula: number
+  montoPapeleria: number
   montoMensualidad: number
+  montoAlimentacion: number
   montoMora: number | null
   usarMora: boolean
 }
@@ -29,7 +31,9 @@ export default function ConfiguracionPage() {
   const [form, setForm] = useState<Configuracion>({
     logoUrl: '',
     montoMatricula: 10,
+    montoPapeleria: 15,
     montoMensualidad: 20,
+    montoAlimentacion: 10,
     montoMora: 0,
     usarMora: false,
   })
@@ -46,7 +50,9 @@ export default function ConfiguracionPage() {
         setForm({
           logoUrl: data.logoUrl || '',
           montoMatricula: Number(data.montoMatricula ?? 10),
+          montoPapeleria: Number(data.montoPapeleria ?? 15),
           montoMensualidad: Number(data.montoMensualidad ?? 20),
+          montoAlimentacion: Number(data.montoAlimentacion ?? 10),
           montoMora: Number(data.montoMora ?? 0),
           usarMora: Boolean(data.usarMora),
         })
@@ -179,6 +185,30 @@ export default function ConfiguracionPage() {
                       min="0"
                       value={form.montoMensualidad}
                       onChange={(e) => setForm({ ...form, montoMensualidad: Number(e.target.value) })}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="montoPapeleria">Monto de papelería</Label>
+                    <Input
+                      id="montoPapeleria"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={form.montoPapeleria}
+                      onChange={(e) => setForm({ ...form, montoPapeleria: Number(e.target.value) })}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="montoAlimentacion">Monto de alimentación</Label>
+                    <Input
+                      id="montoAlimentacion"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={form.montoAlimentacion}
+                      onChange={(e) => setForm({ ...form, montoAlimentacion: Number(e.target.value) })}
                     />
                   </div>
                 </div>

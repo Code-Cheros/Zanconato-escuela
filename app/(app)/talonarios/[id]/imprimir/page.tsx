@@ -86,6 +86,13 @@ function normalizeText(value: string) {
   return value.trim().replace(/\s+/g, ' ').toUpperCase()
 }
 
+function getPeriodoLabel(comp: Comprobante, anio: number) {
+  if (comp.tipo === 'MATRICULA') return `Matrícula ${anio}`
+  if (comp.tipo === 'PAPELERIA') return `Papelería ${anio}`
+  if (comp.mes) return `${comp.mes} ${anio}`
+  return `Enero ${anio}`
+}
+
 function Barcode({ value }: { value: string }) {
   const bars = getBarcodeBars(value)
 
@@ -110,6 +117,8 @@ function SlipCopy({
   talonarioCode,
   logoUrl,
   showExtras,
+  mostrarMora,
+  montoMora,
 }: {
   copyTitle: string
   estudiante: Talonario['estudiante']
@@ -118,6 +127,8 @@ function SlipCopy({
   talonarioCode: string
   logoUrl?: string | null
   showExtras: boolean
+  mostrarMora: boolean
+  montoMora: number
 }) {
   const tipo = TIPO_PAGO_LABELS[comp.tipo]
   const concepto = comp.mes ? `${tipo} ${comp.mes} ${anio}` : tipo
@@ -128,16 +139,16 @@ function SlipCopy({
     year: 'numeric',
   }).format(new Date())
   const cuota = formatMoney(comp.monto)
-  const mora = formatMoneyCompact(comp.monto + 1.8)
+  const mora = formatMoneyCompact(comp.monto + montoMora)
   const nombre = normalizeText(estudiante.nombre)
   const grado = estudiante.grado || '9'
   const seccion = estudiante.seccion || 'A'
   const sede = 'CENTRAL'
   const turno = 'Matutino'
-  const periodo = comp.mes ? `${comp.mes} ${anio}` : `Enero ${anio}`
+  const periodo = getPeriodoLabel(comp, anio)
 
   return (
-    <div className="flex h-full flex-col justify-between bg-[#dff2fa] px-2.5 py-2 text-[#26485d]">
+    <div className="flex h-full flex-col justify-between bg-white px-2.5 py-2 text-[#26485d]">
       <div>
         <div className="flex items-start gap-2">
           {logoUrl ? (
@@ -167,9 +178,6 @@ function SlipCopy({
       </div>
 
       <div className="space-y-0.5 pt-1 text-[9px] font-semibold leading-tight text-[#2f5268]">
-        {showExtras ? (
-          <p>Este comprobante se convierte en recibo con el sello del cajero</p>
-        ) : null}
         <p className="pt-1 text-[14px] font-black uppercase tracking-tight text-[#295c7a]">{copyTitle}</p>
       </div>
 
@@ -178,15 +186,17 @@ function SlipCopy({
           <div className="text-[11px] font-black uppercase tracking-wide text-[#295c7a]">ORIGINAL:</div>
           <div className="text-[11px] font-black uppercase tracking-wide text-[#295c7a]">{copyTitle}</div>
         </div>
-        <div className="flex shrink-0 flex-col items-center gap-0.5 text-right">
+        <div className="-mt-2 flex shrink-0 flex-col items-center gap-0.5 text-right">
           {showExtras ? (
             <>
-              <div className="text-[10px] font-semibold text-[#2f5268]">
-                <span className="font-bold">Monto con mora:</span> {mora}
-              </div>
-              <div className="text-[10px] font-semibold text-[#2f5268]">
+              <div className="mb-0.5 text-[10px] font-semibold text-[#2f5268]">
                 <span className="font-bold">Última fecha de pago</span> {fecha}
               </div>
+              {mostrarMora ? (
+                <div className="text-[10px] font-semibold text-[#2f5268]">
+                  <span className="font-bold">Monto con mora:</span> {mora}
+                </div>
+              ) : null}
               <div className="text-[10px] font-semibold text-[#2f5268]"><span className="font-bold">Turno:</span> {turno}</div>
             </>
           ) : null}
@@ -199,11 +209,25 @@ function SlipCopy({
   )
 }
 
-function ComprobanteCard({ comp, estudiante, anio, logoUrl }: { comp: Comprobante; estudiante: Talonario['estudiante']; anio: number; logoUrl?: string | null }) {
+function ComprobanteCard({
+  comp,
+  estudiante,
+  anio,
+  logoUrl,
+  mostrarMora,
+  montoMora,
+}: {
+  comp: Comprobante
+  estudiante: Talonario['estudiante']
+  anio: number
+  logoUrl?: string | null
+  mostrarMora: boolean
+  montoMora: number
+}) {
   const talonarioCode = getSeededNumber(`${comp.id}-${anio}-${estudiante.nie}`)
 
   return (
-    <div className="relative h-[58mm] overflow-hidden rounded-[2px] border border-[#aac1d0] bg-[#dff2fa] text-slate-900 print-slip">
+    <div className="relative h-[58mm] overflow-hidden rounded-[2px] border border-[#aac1d0] bg-white text-slate-900 print-slip">
       <div className="grid h-full grid-cols-[35%_65%] divide-x divide-dashed divide-[#a8bfd0]">
         <SlipCopy
           copyTitle="ORIGINAL ESTUDIANTE"
@@ -213,6 +237,8 @@ function ComprobanteCard({ comp, estudiante, anio, logoUrl }: { comp: Comprobant
           talonarioCode={talonarioCode}
           logoUrl={logoUrl}
           showExtras={false}
+          mostrarMora={mostrarMora}
+          montoMora={montoMora}
         />
         <SlipCopy
           copyTitle="ORIGINAL COLEGIO"
@@ -222,6 +248,8 @@ function ComprobanteCard({ comp, estudiante, anio, logoUrl }: { comp: Comprobant
           talonarioCode={talonarioCode}
           logoUrl={logoUrl}
           showExtras
+          mostrarMora={mostrarMora}
+          montoMora={montoMora}
         />
       </div>
 
@@ -241,6 +269,8 @@ export default function ImprimirTalonarioPage() {
   const [talonario, setTalonario] = useState<Talonario | null>(null)
   const [loading, setLoading] = useState(true)
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [usarMora, setUsarMora] = useState(false)
+  const [montoMora, setMontoMora] = useState(0)
 
   useEffect(() => {
     Promise.all([
@@ -250,6 +280,8 @@ export default function ImprimirTalonarioPage() {
       .then(([tal, conf]) => {
         setTalonario(tal)
         setLogoUrl(conf?.logoUrl || null)
+        setUsarMora(Boolean(conf?.usarMora))
+        setMontoMora(Number(conf?.montoMora ?? 0))
         setLoading(false)
       })
       .catch(() => { toast.error('Error'); setLoading(false) })
@@ -305,6 +337,8 @@ export default function ImprimirTalonarioPage() {
                   estudiante={talonario.estudiante}
                   anio={talonario.anio}
                   logoUrl={logoUrl}
+                  mostrarMora={usarMora && montoMora > 0}
+                  montoMora={montoMora}
                 />
               ))}
               {page.length < 4 && [...Array(4 - page.length)].map((_, i) => (
@@ -328,6 +362,15 @@ export default function ImprimirTalonarioPage() {
         @media print {
           .no-print { display: none !important; }
           body { background: white !important; margin: 0 !important; padding: 0 !important; }
+          [data-slot="sidebar-wrapper"] [data-slot="sidebar"],
+          [data-slot="sidebar-wrapper"] [data-slot="sidebar-gap"],
+          [data-slot="sidebar-wrapper"] header {
+            display: none !important;
+          }
+          [data-slot="sidebar-wrapper"] [data-slot="sidebar-inset"] {
+            min-height: auto !important;
+            background: white !important;
+          }
           .print-page {
             box-shadow: none !important;
             border-radius: 0 !important;
