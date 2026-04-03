@@ -57,10 +57,12 @@ export async function GET(req: NextRequest) {
   const { inicio, fin, label, titulo } = buildRange(searchParams)
   const grado = searchParams.get('grado') || ''
   const seccion = searchParams.get('seccion') || ''
+  const tipoPago = searchParams.get('tipoPago') || ''
 
   const pagos = await prisma.pago.findMany({
     where: {
       fecha: { gte: inicio, lte: fin },
+      ...(tipoPago && { tipo: tipoPago as any }),
       estudiante: {
         ...(grado && { grado: { contains: grado, mode: 'insensitive' } }),
         ...(seccion && { seccion: { contains: seccion, mode: 'insensitive' } }),
