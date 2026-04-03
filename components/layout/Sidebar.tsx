@@ -38,8 +38,8 @@ const navItems = [
   { href: '/talonarios', label: 'Talonarios', icon: BookOpen, roles: ['COLECTOR', 'MATRICULA', 'ADMINISTRATIVO'] },
   { href: '/estudiantes', label: 'Estudiantes', icon: Users, roles: ['MATRICULA', 'ADMINISTRATIVO'] },
   { href: '/usuarios', label: 'Usuarios', icon: UserCog, roles: ['ADMINISTRATIVO'] },
-  { href: '/configuracion', label: 'Configuración', icon: Settings, roles: ['ADMINISTRATIVO'] },
   { href: '/reportes', label: 'Reportes', icon: BarChart3, roles: ['ADMINISTRATIVO'] },
+  { href: '/configuracion', label: 'Configuración', icon: Settings, roles: ['ADMINISTRATIVO'] },
 ]
 
 type SessionUser = { name?: string | null; email?: string | null; rol?: string }

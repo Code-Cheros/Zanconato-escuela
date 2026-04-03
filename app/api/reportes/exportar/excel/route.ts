@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
     PAPELERIA: 'Papelería',
     COLEGIATURA: 'Colegiatura',
     ALIMENTACION: 'Alimentación',
+    OTRO: 'Otro',
   }
 
   const data = pagos.map((p, i) => ({
@@ -43,15 +44,15 @@ export async function GET(req: NextRequest) {
     Nombre: p.estudiante.nombre,
     NIE: p.estudiante.nie,
     Grado: `${p.estudiante.grado} ${p.estudiante.seccion}`,
-    'Tipo de Pago': TIPO_LABELS[p.tipo] || p.tipo,
-    Mes: p.comprobante.mes || '—',
+    'Tipo de Pago': p.tipo === 'OTRO' ? (p.tipoPersonalizado || 'Otro') : (TIPO_LABELS[p.tipo] || p.tipo),
+    Mes: p.comprobante?.mes || '—',
     Monto: p.monto,
     Hora: new Date(p.fecha).toLocaleTimeString('es-SV'),
     Notas: p.notas || '',
   }))
 
   // Resumen
-  const resumen: Record<string, number> = { MATRICULA: 0, PAPELERIA: 0, COLEGIATURA: 0, ALIMENTACION: 0 }
+  const resumen: Record<string, number> = { MATRICULA: 0, PAPELERIA: 0, COLEGIATURA: 0, ALIMENTACION: 0, OTRO: 0 }
   for (const p of pagos) resumen[p.tipo] = (resumen[p.tipo] || 0) + p.monto
   const total = Object.values(resumen).reduce((a, b) => a + b, 0)
 
@@ -71,6 +72,7 @@ export async function GET(req: NextRequest) {
     { Categoría: 'Papelería', Total: resumen.PAPELERIA },
     { Categoría: 'Colegiatura', Total: resumen.COLEGIATURA },
     { Categoría: 'Alimentación', Total: resumen.ALIMENTACION },
+    { Categoría: 'Otro', Total: resumen.OTRO },
     { Categoría: 'TOTAL', Total: total },
   ]
   const wsResumen = XLSX.utils.json_to_sheet(resumenData)

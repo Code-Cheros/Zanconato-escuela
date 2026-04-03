@@ -49,12 +49,15 @@ interface Estudiante {
   creadoEn: string
 }
 
+const ITEMS_PER_PAGE = 10
+
 export default function EstudiantesPage() {
   const { data: session } = useSession()
   const rol = (session?.user as any)?.rol
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
 
   const fetchEstudiantes = async () => {
     setLoading(true)
@@ -64,6 +67,7 @@ export default function EstudiantesPage() {
       const res = await fetch(`/api/estudiantes?${params}`)
       const data = await res.json()
       setEstudiantes(Array.isArray(data) ? data : [])
+      setCurrentPage(1)
     } catch {
       toast.error('Error cargando estudiantes')
     } finally {
@@ -72,6 +76,18 @@ export default function EstudiantesPage() {
   }
 
   useEffect(() => { fetchEstudiantes() }, [search])
+
+  const totalItems = estudiantes.length
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIdx = startIdx + ITEMS_PER_PAGE
+  const paginatedEstudiantes = estudiantes.slice(startIdx, endIdx)
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
+    }
+  }
 
   const handleDelete = async (id: string) => {
     try {
@@ -154,7 +170,7 @@ export default function EstudiantesPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  estudiantes.map(est => (
+                  paginatedEstudiantes.map(est => (
                     <TableRow key={est.id}>
                       <TableCell className="px-4 py-3 font-medium">{est.nombre}</TableCell>
                       <TableCell className="px-4 py-3 font-mono text-muted-foreground">{est.nie}</TableCell>
@@ -228,7 +244,7 @@ export default function EstudiantesPage() {
               </Empty>
             ) : (
               <ul className="divide-y">
-                {estudiantes.map(est => (
+                {paginatedEstudiantes.map(est => (
                   <li key={est.id} className="p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -277,8 +293,100 @@ export default function EstudiantesPage() {
           </div>
 
           {!loading && estudiantes.length > 0 && (
-            <CardFooter className="border-t py-3 text-xs text-muted-foreground">
-              {estudiantes.length} estudiante{estudiantes.length !== 1 ? 's' : ''} encontrado{estudiantes.length !== 1 ? 's' : ''}
+            <CardFooter className="flex flex-col gap-3 border-t py-3 px-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-xs text-muted-foreground">
+                <p>
+                  Mostrando <span className="font-medium">{Math.min(startIdx + 1, totalItems)}</span> a{' '}
+                  <span className="font-medium">{Math.min(endIdx, totalItems)}</span> de{' '}
+                  <span className="font-semibold">{totalItems}</span> estudiante{totalItems !== 1 ? 's' : ''}
+                </p>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="h-8 px-2 text-xs font-medium hidden sm:inline-flex"
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="h-8 w-8 p-0 sm:hidden"
+                  >
+                    ←
+                  </Button>
+
+                  {totalPages <= 7 ? (
+                    Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className="h-8 w-8 p-0 text-xs font-medium"
+                      >
+                        {page}
+                      </Button>
+                    ))
+                  ) : (
+                    <>
+                      {Array.from({ length: 3 }, (_, i) => i + 1).map(page => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handlePageChange(page)}
+                          className="h-8 w-8 p-0 text-xs font-medium"
+                        >
+                          {page}
+                        </Button>
+                      ))}
+
+                      <span className="flex h-8 w-8 items-center justify-center text-xs text-muted-foreground">
+                        ...
+                      </span>
+
+                      {Array.from({ length: 3 }, (_, i) => totalPages - 2 + i).map(page => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handlePageChange(page)}
+                          className="h-8 w-8 p-0 text-xs font-medium"
+                        >
+                          {page}
+                        </Button>
+                      ))}
+                    </>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="h-8 px-2 text-xs font-medium hidden sm:inline-flex"
+                  >
+                    Siguiente
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="h-8 w-8 p-0 sm:hidden"
+                  >
+                    →
+                  </Button>
+                </div>
+              )}
             </CardFooter>
           )}
         </Card>

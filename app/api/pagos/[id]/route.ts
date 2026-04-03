@@ -18,5 +18,23 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   })
 
   if (!pago) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
-  return NextResponse.json(pago)
+
+  const registrador = await prisma.usuario.findUnique({
+    where: { id: pago.registradoPor },
+    select: { id: true, nombre: true, email: true, rol: true },
+  })
+
+  const prismaCompat = prisma as any
+  const config = await prismaCompat.configuracionSistema.findUnique({
+    where: { id: 'global' },
+  })
+
+  return NextResponse.json({
+    ...pago,
+    registrador,
+    colegio: {
+      nombre: 'Complejo Educativo Católico Zaconato',
+      logoUrl: config?.logoUrl || null,
+    },
+  })
 }

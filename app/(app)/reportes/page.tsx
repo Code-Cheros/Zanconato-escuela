@@ -15,7 +15,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableFooter as TableFoot,
   TableHead,
   TableHeader,
   TableRow,
@@ -42,13 +41,17 @@ const typeBadgeClass: Record<string, string> = {
   ALIMENTACION: 'border-green-200 bg-green-50 text-green-700',
   MATRICULA: 'border-amber-200 bg-amber-50 text-amber-700',
   PAPELERIA: 'border-purple-200 bg-purple-50 text-purple-700',
+  OTRO: 'border-slate-200 bg-slate-50 text-slate-700',
 }
+
+const ITEMS_PER_PAGE = 10
 
 export default function ReportesPage() {
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
   const [reporte, setReporte] = useState<ReporteData | null>(null)
   const [loading, setLoading] = useState(false)
   const [downloading, setDownloading] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
 
   const fetchReporte = async () => {
     setLoading(true)
@@ -56,6 +59,7 @@ export default function ReportesPage() {
       const res = await fetch(`/api/reportes/diario?fecha=${fecha}`)
       if (res.ok) {
         setReporte(await res.json())
+        setCurrentPage(1)
       } else {
         const err = await res.json()
         toast.error(err.error || 'Error cargando reporte')
@@ -100,7 +104,20 @@ export default function ReportesPage() {
     { tipo: 'ALIMENTACION', label: 'Alimentación', icon: '🍽️' },
     { tipo: 'MATRICULA', label: 'Matrícula', icon: '📋' },
     { tipo: 'PAPELERIA', label: 'Papelería', icon: '📦' },
+    { tipo: 'OTRO', label: 'Otros', icon: '🧾' },
   ]
+
+  const totalItems = reporte?.pagos?.length || 0
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIdx = startIdx + ITEMS_PER_PAGE
+  const paginatedPagos = reporte?.pagos?.slice(startIdx, endIdx) || []
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
+    }
+  }
 
   const noData = !loading && (!reporte || reporte.cantidad === 0)
 
@@ -209,15 +226,15 @@ export default function ReportesPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {reporte.pagos.map((p: any, i: number) => (
+                    {paginatedPagos.map((p: any, i: number) => (
                       <TableRow key={p.id}>
-                        <TableCell className="px-4 py-3 text-muted-foreground">{i + 1}</TableCell>
+                        <TableCell className="px-4 py-3 text-muted-foreground">{startIdx + i + 1}</TableCell>
                         <TableCell className="px-4 py-3 font-medium">{p.estudiante.nombre}</TableCell>
                         <TableCell className="px-4 py-3 font-mono text-muted-foreground">{p.estudiante.nie}</TableCell>
                         <TableCell className="px-4 py-3 text-muted-foreground">{p.estudiante.grado} {p.estudiante.seccion}</TableCell>
                         <TableCell className="px-4 py-3">
                           <Badge className={cn('border', typeBadgeClass[p.tipo] || '')}>
-                            {TIPO_PAGO_LABELS[p.tipo]}
+                            {p.tipo === 'OTRO' ? (p.tipoPersonalizado || 'Otro') : (TIPO_PAGO_LABELS[p.tipo] || p.tipo)}
                           </Badge>
                         </TableCell>
                         <TableCell className="px-4 py-3 text-muted-foreground">{p.comprobante?.mes || '—'}</TableCell>
@@ -228,18 +245,106 @@ export default function ReportesPage() {
                       </TableRow>
                     ))}
                   </TableBody>
-                  <TableFoot>
-                    <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableCell colSpan={6} className="px-4 py-3 text-right font-semibold">
-                        Total del día:
-                      </TableCell>
-                      <TableCell className="px-4 py-3 font-bold text-emerald-600 tabular-nums">
-                        {formatCurrency(reporte.total)}
-                      </TableCell>
-                      <TableCell />
-                    </TableRow>
-                  </TableFoot>
                 </Table>
+              )}
+
+              {reporte.pagos.length > 0 && (
+                <CardFooter className="flex flex-col gap-3 border-t py-3 px-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="text-xs text-muted-foreground">
+                    <p>
+                      Mostrando <span className="font-medium">{Math.min(startIdx + 1, totalItems)}</span> a{' '}
+                      <span className="font-medium">{Math.min(endIdx, totalItems)}</span> de{' '}
+                      <span className="font-semibold">{totalItems}</span> registro{totalItems !== 1 ? 's' : ''} • Total del día:{' '}
+                      <span className="font-semibold text-emerald-600">{formatCurrency(reporte.total)}</span>
+                    </p>
+                  </div>
+
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="h-8 px-2 text-xs font-medium hidden sm:inline-flex"
+                      >
+                        Anterior
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="h-8 w-8 p-0 sm:hidden"
+                      >
+                        ←
+                      </Button>
+
+                      {totalPages <= 7 ? (
+                        Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => handlePageChange(page)}
+                            className="h-8 w-8 p-0 text-xs font-medium"
+                          >
+                            {page}
+                          </Button>
+                        ))
+                      ) : (
+                        <>
+                          {Array.from({ length: 3 }, (_, i) => i + 1).map(page => (
+                            <Button
+                              key={page}
+                              variant={currentPage === page ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => handlePageChange(page)}
+                              className="h-8 w-8 p-0 text-xs font-medium"
+                            >
+                              {page}
+                            </Button>
+                          ))}
+
+                          <span className="flex h-8 w-8 items-center justify-center text-xs text-muted-foreground">
+                            ...
+                          </span>
+
+                          {Array.from({ length: 3 }, (_, i) => totalPages - 2 + i).map(page => (
+                            <Button
+                              key={page}
+                              variant={currentPage === page ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => handlePageChange(page)}
+                              className="h-8 w-8 p-0 text-xs font-medium"
+                            >
+                              {page}
+                            </Button>
+                          ))}
+                        </>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="h-8 px-2 text-xs font-medium hidden sm:inline-flex"
+                      >
+                        Siguiente
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="h-8 w-8 p-0 sm:hidden"
+                      >
+                        →
+                      </Button>
+                    </div>
+                  )}
+                </CardFooter>
               )}
             </Card>
           </>

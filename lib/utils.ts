@@ -26,6 +26,7 @@ export const TIPO_PAGO_LABELS: Record<string, string> = {
   PAPELERIA: 'Papelería',
   COLEGIATURA: 'Colegiatura',
   ALIMENTACION: 'Alimentación',
+  OTRO: 'Otro',
 }
 
 export const ROL_LABELS: Record<string, string> = {
@@ -55,4 +56,10 @@ export function formatDateShort(date: Date | string): string {
     month: '2-digit',
     day: '2-digit',
   }).format(new Date(date))
+}
+
+export function formatReceiptFolio(date: Date | string, id: string): string {
+  const year = new Date(date).getFullYear()
+  const suffix = id.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(-8).padStart(8, '0')
+  return `REC-${year}-${suffix}`
 }

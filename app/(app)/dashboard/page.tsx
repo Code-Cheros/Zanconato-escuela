@@ -115,11 +115,14 @@ function EstudianteActions({ estudianteId }: { estudianteId: string }) {
 
 type Periodo = 'mes' | 'anual' | 'personalizado'
 
+const ITEMS_PER_PAGE = 10
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([])
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
 
   // Period filter
   const [periodo, setPeriodo] = useState<Periodo>('mes')
@@ -175,6 +178,7 @@ export default function DashboardPage() {
       const estData = await estRes.json()
       setStats(statsData)
       setEstudiantes(Array.isArray(estData) ? estData : [])
+      setCurrentPage(1)
     } catch {
       toast.error('Error cargando datos')
     } finally {
@@ -198,6 +202,19 @@ export default function DashboardPage() {
   }
 
   const hasActiveFilters = filterNombre || filterNie || filterGrado || filterSeccion || filterEncargado || filterTelefono || filterEstado
+
+  // Pagination logic
+  const totalItems = estudiantes.length
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIdx = startIdx + ITEMS_PER_PAGE
+  const paginatedEstudiantes = estudiantes.slice(startIdx, endIdx)
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    const validPage = Math.max(1, Math.min(page, totalPages))
+    setCurrentPage(validPage)
+  }
 
   const statCards = stats
     ? [
@@ -232,16 +249,16 @@ export default function DashboardPage() {
     <div className="flex min-h-0 flex-1 flex-col">
       <Header title="Dashboard" subtitle="Resumen general del sistema" />
 
-      <div className="flex-1 space-y-4 p-4 sm:space-y-6 sm:p-6">
+      <div className="flex-1 space-y-3 p-4 sm:space-y-4 sm:p-6">
         {/* Period Selector */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex items-center gap-1 rounded-lg border bg-card p-0.5">
             {(['mes', 'anual', 'personalizado'] as Periodo[]).map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriodo(p)}
                 className={cn(
-                  'rounded-md px-3 py-1.5 text-xs font-medium transition-colors capitalize',
+                  'rounded-md px-2.5 py-1 text-xs font-medium transition-colors capitalize',
                   periodo === p
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
@@ -253,25 +270,25 @@ export default function DashboardPage() {
           </div>
 
           {periodo === 'personalizado' && (
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1.5">
-                <Calendar className="size-3.5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Desde</span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex items-center gap-1">
+                <Calendar className="size-3 text-muted-foreground" />
+                <span className="text-[11px] text-muted-foreground">Desde</span>
                 <input
                   type="date"
                   value={customDesde}
                   onChange={e => setCustomDesde(e.target.value)}
-                  className="h-8 rounded-md border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="h-7 rounded-md border bg-background px-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-muted-foreground">Hasta</span>
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] text-muted-foreground">Hasta</span>
                 <input
                   type="date"
                   value={customHasta}
                   onChange={e => setCustomHasta(e.target.value)}
                   min={customDesde}
-                  className="h-8 rounded-md border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="h-7 rounded-md border bg-background px-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
             </div>
@@ -280,35 +297,35 @@ export default function DashboardPage() {
 
         {/* Stats */}
         {loading ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
-              <Card key={i} className="py-4">
-                <CardContent className="flex items-center justify-between gap-3">
-                  <div className="flex flex-1 flex-col gap-2">
-                    <Skeleton className="h-3 w-24" />
-                    <Skeleton className="h-8 w-16" />
+              <Card key={i} className="py-3">
+                <CardContent className="flex items-center justify-between gap-2">
+                  <div className="flex flex-1 flex-col gap-1.5">
+                    <Skeleton className="h-2.5 w-20" />
+                    <Skeleton className="h-6 w-12" />
                   </div>
-                  <Skeleton className="size-10 shrink-0 rounded-lg" />
+                  <Skeleton className="size-8 shrink-0 rounded-lg" />
                 </CardContent>
               </Card>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
             {statCards.map(card => (
-              <Card key={card.label} className="py-4">
-                <CardContent className="flex items-center justify-between gap-3">
+              <Card key={card.label} className="py-3">
+                <CardContent className="flex items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-muted-foreground">{card.label}</p>
-                    <p className="mt-1 truncate text-2xl font-bold tabular-nums">{card.value}</p>
+                    <p className="text-[10px] font-medium text-muted-foreground">{card.label}</p>
+                    <p className="mt-0.5 truncate text-lg font-bold tabular-nums">{card.value}</p>
                   </div>
                   <div
                     className={cn(
-                      'flex size-10 shrink-0 items-center justify-center rounded-lg',
+                      'flex size-8 shrink-0 items-center justify-center rounded-lg',
                       card.iconWrap
                     )}
                   >
-                    <card.icon className="size-5" />
+                    <card.icon className="size-4" />
                   </div>
                 </CardContent>
               </Card>
@@ -318,27 +335,27 @@ export default function DashboardPage() {
 
         {/* Students */}
         <Card className="min-w-0 py-0">
-          <CardHeader className="flex flex-col gap-4 border-b px-4 py-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle className="text-base sm:text-lg">Gestión de Estudiantes</CardTitle>
+          <CardHeader className="flex flex-col gap-3 border-b px-4 py-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="text-base">Gestión de Estudiantes</CardTitle>
               <div className="flex flex-wrap items-center gap-2">
                 <Button 
                   variant={showFilters ? "secondary" : "outline"} 
                   size="sm" 
                   onClick={() => setShowFilters(!showFilters)}
-                  className="gap-2"
+                  className="gap-1.5 h-8 text-xs"
                 >
-                  <Filter className="size-4" />
+                  <Filter className="size-3.5" />
                   {showFilters ? 'Ocultar Filtros' : 'Filtros'}
                   {hasActiveFilters && (
-                    <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px] uppercase">
+                    <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[8px] uppercase">
                       Activos
                     </Badge>
                   )}
                 </Button>
-                <Button size="sm" asChild>
+                <Button size="sm" asChild className="h-8 text-xs gap-1.5">
                   <Link href="/estudiantes/nuevo">
-                    <Plus className="size-4" />
+                    <Plus className="size-3.5" />
                     Nueva Matrícula
                   </Link>
                 </Button>
@@ -347,16 +364,16 @@ export default function DashboardPage() {
 
             {/* Expanded Filters */}
             {showFilters && (
-              <div className="grid grid-cols-1 gap-3 border-t pt-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-2 border-t pt-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Nombre</label>
                   <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Search className="absolute left-2.5 top-1/2 size-3 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       placeholder="Buscar por nombre..."
                       value={filterNombre}
                       onChange={e => setFilterNombre(e.target.value)}
-                      className="h-9 pl-8 text-sm"
+                      className="h-8 pl-7 text-xs"
                     />
                   </div>
                 </div>
@@ -366,13 +383,13 @@ export default function DashboardPage() {
                     placeholder="Número de NIE..."
                     value={filterNie}
                     onChange={e => setFilterNie(e.target.value)}
-                    className="h-9 text-sm font-mono"
+                    className="h-8 text-xs font-mono"
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Grado</label>
                   <Select value={filterGrado || 'all'} onValueChange={v => setFilterGrado(v === 'all' ? '' : v)}>
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Todos los grados" />
                     </SelectTrigger>
                     <SelectContent>
@@ -386,7 +403,7 @@ export default function DashboardPage() {
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sección</label>
                   <Select value={filterSeccion || 'all'} onValueChange={v => setFilterSeccion(v === 'all' ? '' : v)}>
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Todas" />
                     </SelectTrigger>
                     <SelectContent>
@@ -403,7 +420,7 @@ export default function DashboardPage() {
                     placeholder="Nombre del encargado..."
                     value={filterEncargado}
                     onChange={e => setFilterEncargado(e.target.value)}
-                    className="h-9 text-sm"
+                    className="h-8 text-xs"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -412,13 +429,13 @@ export default function DashboardPage() {
                     placeholder="Número de teléfono..."
                     value={filterTelefono}
                     onChange={e => setFilterTelefono(e.target.value)}
-                    className="h-9 text-sm"
+                    className="h-8 text-xs"
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Estado de Pago</label>
                   <Select value={filterEstado || 'all'} onValueChange={v => setFilterEstado(v === 'all' ? '' : v)}>
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Todos los estados" />
                     </SelectTrigger>
                     <SelectContent>
@@ -432,7 +449,7 @@ export default function DashboardPage() {
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Año Escolar</label>
                   <Select value={filterAnio} onValueChange={setFilterAnio}>
-                    <SelectTrigger className="h-9 text-sm font-medium">
+                    <SelectTrigger className="h-8 text-xs font-medium">
                       <SelectValue placeholder="Seleccionar año" />
                     </SelectTrigger>
                     <SelectContent>
@@ -444,8 +461,8 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-end pb-0.5">
                   {(hasActiveFilters || filterAnio !== String(new Date().getFullYear())) && (
-                    <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 w-full gap-2 text-muted-foreground">
-                      <X className="size-4" />
+                    <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 w-full gap-2 text-[11px] text-muted-foreground">
+                      <X className="size-3.5" />
                       Limpiar filtros
                     </Button>
                   )}
@@ -459,25 +476,25 @@ export default function DashboardPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead className="px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <TableHead className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Nombre
                   </TableHead>
-                  <TableHead className="px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <TableHead className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     NIE
                   </TableHead>
-                  <TableHead className="px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <TableHead className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Grado / Sección
                   </TableHead>
-                  <TableHead className="px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <TableHead className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Encargado
                   </TableHead>
-                  <TableHead className="px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <TableHead className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Teléfono
                   </TableHead>
-                  <TableHead className="px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <TableHead className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Estado
                   </TableHead>
-                  <TableHead className="px-4 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <TableHead className="px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Acciones
                   </TableHead>
                 </TableRow>
@@ -487,8 +504,8 @@ export default function DashboardPage() {
                   [...Array(5)].map((_, i) => (
                     <TableRow key={i}>
                       {[...Array(7)].map((_, j) => (
-                        <TableCell key={j} className="px-4 py-3">
-                          <Skeleton className="h-4 w-full max-w-32" />
+                        <TableCell key={j} className="px-3 py-2">
+                          <Skeleton className="h-3 w-full max-w-28" />
                         </TableCell>
                       ))}
                     </TableRow>
@@ -496,7 +513,7 @@ export default function DashboardPage() {
                 ) : estudiantes.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="p-0">
-                      <Empty className="min-h-48 rounded-none border-0">
+                      <Empty className="min-h-40 rounded-none border-0">
                         <EmptyHeader>
                           <EmptyMedia variant="icon">
                             <Users />
@@ -510,23 +527,23 @@ export default function DashboardPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  estudiantes.map(est => (
+                  paginatedEstudiantes.map(est => (
                     <TableRow key={est.id}>
-                      <TableCell className="px-4 py-3 font-medium">{est.nombre}</TableCell>
-                      <TableCell className="px-4 py-3 font-mono text-muted-foreground">{est.nie}</TableCell>
-                      <TableCell className="px-4 py-3 text-muted-foreground">
+                      <TableCell className="px-3 py-2 text-sm font-medium">{est.nombre}</TableCell>
+                      <TableCell className="px-3 py-2 font-mono text-xs text-muted-foreground">{est.nie}</TableCell>
+                      <TableCell className="px-3 py-2 text-sm text-muted-foreground">
                         {est.grado} — {est.seccion}
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-muted-foreground">
+                      <TableCell className="px-3 py-2 text-sm text-muted-foreground">
                         {est.encargado || '—'}
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-muted-foreground">
+                      <TableCell className="px-3 py-2 text-sm text-muted-foreground">
                         {est.telefono || '—'}
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell className="px-3 py-2">
                         <EstadoBadge talonarios={est.talonarios} activo={est.activo} />
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-right">
+                      <TableCell className="px-3 py-2 text-right">
                         <div className="flex justify-end">
                           <EstudianteActions estudianteId={est.id} />
                         </div>
@@ -564,7 +581,7 @@ export default function DashboardPage() {
               </Empty>
             ) : (
               <ul className="divide-y">
-                {estudiantes.map(est => (
+                {paginatedEstudiantes.map(est => (
                   <li key={est.id} className="p-4">
                     <div className="flex flex-col gap-3">
                       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -607,9 +624,64 @@ export default function DashboardPage() {
           </div>
 
           {estudiantes.length > 0 && !loading && (
-            <CardFooter className="border-t py-3 text-xs text-muted-foreground">
-              {estudiantes.length} estudiante{estudiantes.length !== 1 ? 's' : ''} encontrado
-              {estudiantes.length !== 1 ? 's' : ''}
+            <CardFooter className="border-t flex flex-col gap-3 py-3 px-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-[11px] text-muted-foreground">
+                Mostrando {startIdx + 1} a {Math.min(endIdx, totalItems)} de {totalItems} estudiante{totalItems !== 1 ? 's' : ''}
+              </p>
+              
+              {totalPages > 1 && (
+                <div className="flex items-center gap-0.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="h-7 gap-0.5 px-1.5 text-xs"
+                  >
+                    ←{' '}
+                    <span className="hidden sm:inline">Anterior</span>
+                  </Button>
+                  
+                  <div className="flex items-center gap-0.5">
+                    {[...Array(totalPages)].map((_, idx) => {
+                      const page = idx + 1
+                      const isVisible = totalPages <= 7 || 
+                        page === 1 || 
+                        page === totalPages || 
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      
+                      if (!isVisible && idx > 0 && (idx === 1 || idx === totalPages - 2)) {
+                        return <span key={`dots-${idx}`} className="px-0.5 text-muted-foreground text-[10px]">…</span>
+                      }
+                      
+                      if (!isVisible) return null
+                      
+                      return (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handlePageChange(page)}
+                          className="h-7 w-6 p-0 text-xs"
+                        >
+                          {page}
+                        </Button>
+                      )
+                    })}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="h-7 gap-0.5 px-1.5 text-xs"
+                  >
+                    <span className="hidden sm:inline">Siguiente</span>
+                    {' '}→
+                  </Button>
+                </div>
+              )}
             </CardFooter>
           )}
         </Card>

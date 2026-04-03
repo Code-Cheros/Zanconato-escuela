@@ -44,13 +44,14 @@ export async function GET(req: NextRequest) {
     },
   })
 
-  const resumen: Record<string, number> = { MATRICULA: 0, PAPELERIA: 0, COLEGIATURA: 0, ALIMENTACION: 0 }
+  const resumen: Record<string, number> = { MATRICULA: 0, PAPELERIA: 0, COLEGIATURA: 0, ALIMENTACION: 0, OTRO: 0 }
   for (const p of pagos) resumen[p.tipo] = (resumen[p.tipo] || 0) + p.monto
   const total = Object.values(resumen).reduce((a, b) => a + b, 0)
 
   const TIPO_LABELS: Record<string, string> = {
     MATRICULA: 'Matrícula', PAPELERIA: 'Papelería',
     COLEGIATURA: 'Colegiatura', ALIMENTACION: 'Alimentación',
+    OTRO: 'Otro',
   }
 
   const formatUSD = (n: number) => `$${n.toFixed(2)}`
@@ -61,8 +62,8 @@ export async function GET(req: NextRequest) {
       <td>${p.estudiante.nombre}</td>
       <td>${p.estudiante.nie}</td>
       <td>${p.estudiante.grado} ${p.estudiante.seccion}</td>
-      <td>${TIPO_LABELS[p.tipo]}</td>
-      <td>${p.comprobante.mes || '—'}</td>
+      <td>${p.tipo === 'OTRO' ? (p.tipoPersonalizado || 'Otro') : (TIPO_LABELS[p.tipo] || p.tipo)}</td>
+      <td>${p.comprobante?.mes || '—'}</td>
       <td style="text-align:right">${formatUSD(p.monto)}</td>
     </tr>`
   ).join('')
@@ -138,6 +139,10 @@ export async function GET(req: NextRequest) {
     <div class="summary-card papeleria">
       <h3>📦 Papelería</h3>
       <p>${formatUSD(resumen.PAPELERIA)}</p>
+    </div>
+    <div class="summary-card papeleria">
+      <h3>🧾 Otro</h3>
+      <p>${formatUSD(resumen.OTRO)}</p>
     </div>
   </div>
 

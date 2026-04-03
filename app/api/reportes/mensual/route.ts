@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     orderBy: { fecha: 'asc' },
   })
 
-  const resumen: Record<string, number> = { MATRICULA: 0, PAPELERIA: 0, COLEGIATURA: 0, ALIMENTACION: 0 }
+  const resumen: Record<string, number> = { MATRICULA: 0, PAPELERIA: 0, COLEGIATURA: 0, ALIMENTACION: 0, OTRO: 0 }
   for (const p of pagos) resumen[p.tipo] = (resumen[p.tipo] || 0) + p.monto
 
   return NextResponse.json({

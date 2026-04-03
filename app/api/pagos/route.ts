@@ -114,42 +114,78 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { estudianteId, comprobanteId, notas } = body
+    const {
+      estudianteId,
+      comprobanteId,
+      notas,
+      tipo,
+      monto,
+      tipoPersonalizado,
+    } = body
 
-    if (!estudianteId || !comprobanteId) {
+    if (!estudianteId || !tipo) {
       return NextResponse.json({ error: 'Datos requeridos faltantes' }, { status: 400 })
     }
 
-    const comprobante = await prisma.comprobante.findUnique({
-      where: { id: comprobanteId },
-    })
+    // Mensualidad: se registra contra comprobante existente del talonario.
+    if (tipo === 'COLEGIATURA') {
+      if (!comprobanteId) {
+        return NextResponse.json({ error: 'Debe seleccionar un comprobante para mensualidad' }, { status: 400 })
+      }
 
-    if (!comprobante) {
-      return NextResponse.json({ error: 'Comprobante no encontrado' }, { status: 404 })
-    }
-
-    if (comprobante.pagado) {
-      return NextResponse.json({ error: 'Comprobante ya fue pagado' }, { status: 409 })
-    }
-
-    const pago = await prisma.$transaction(async (tx: any) => {
-      const p = await tx.pago.create({
-        data: {
-          estudianteId,
-          comprobanteId,
-          monto: comprobante.monto,
-          tipo: comprobante.tipo,
-          registradoPor: (session.user as any).id,
-          notas,
-        },
-      })
-
-      await tx.comprobante.update({
+      const comprobante = await prisma.comprobante.findUnique({
         where: { id: comprobanteId },
-        data: { pagado: true, fechaPago: new Date() },
       })
 
-      return p
+      if (!comprobante) {
+        return NextResponse.json({ error: 'Comprobante no encontrado' }, { status: 404 })
+      }
+
+      if (comprobante.pagado) {
+        return NextResponse.json({ error: 'Comprobante ya fue pagado' }, { status: 409 })
+      }
+
+      const pago = await prisma.$transaction(async (tx: any) => {
+        const p = await tx.pago.create({
+          data: {
+            estudianteId,
+            comprobanteId,
+            monto: comprobante.monto,
+            tipo: comprobante.tipo,
+            registradoPor: (session.user as any).id,
+            notas,
+          },
+        })
+
+        await tx.comprobante.update({
+          where: { id: comprobanteId },
+          data: { pagado: true, fechaPago: new Date() },
+        })
+
+        return p
+      })
+
+      return NextResponse.json(pago, { status: 201 })
+    }
+
+    // Pagos manuales: tipo existente o personalizado (OTRO) sin comprobante.
+    if (!monto || Number(monto) <= 0) {
+      return NextResponse.json({ error: 'Debe indicar un monto válido' }, { status: 400 })
+    }
+
+    if (tipo === 'OTRO' && !String(tipoPersonalizado || '').trim()) {
+      return NextResponse.json({ error: 'Debe indicar el nombre del nuevo tipo de pago' }, { status: 400 })
+    }
+
+    const pago = await prisma.pago.create({
+      data: {
+        estudianteId,
+        monto: Number(monto),
+        tipo,
+        tipoPersonalizado: tipo === 'OTRO' ? String(tipoPersonalizado).trim() : null,
+        registradoPor: (session.user as any).id,
+        notas,
+      } as any,
     })
 
     return NextResponse.json(pago, { status: 201 })

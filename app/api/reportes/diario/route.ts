@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
     PAPELERIA: 0,
     COLEGIATURA: 0,
     ALIMENTACION: 0,
+    OTRO: 0,
   }
 
   for (const pago of pagos) {

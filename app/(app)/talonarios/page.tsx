@@ -32,10 +32,13 @@ import {
 import { cn } from '@/lib/utils'
 
 
+const ITEMS_PER_PAGE = 4
+
 export default function TalonariosPage() {
   const searchParams = useSearchParams()
   const [talonarios, setTalonarios] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
   const [showForm, setShowForm] = useState(false)
   const [nie, setNie] = useState('')
   const [estudiante, setEstudiante] = useState<any>(null)
@@ -63,6 +66,7 @@ export default function TalonariosPage() {
       const res = await fetch(`/api/talonarios?${params.toString()}`)
       const data = await res.json()
       setTalonarios(Array.isArray(data) ? data : [])
+      setCurrentPage(1)
     } catch {
       toast.error('Error cargando talonarios')
     } finally {
@@ -122,6 +126,20 @@ export default function TalonariosPage() {
         toast.error(data.error || 'Error creando talonario')
       }
     } catch { toast.error('Error de conexión') } finally { setSaving(false) }
+  }
+
+  // Pagination logic
+  const totalItems = talonarios.length
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIdx = startIdx + ITEMS_PER_PAGE
+  const paginatedTalonarios = talonarios.slice(startIdx, endIdx)
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }
 
   return (
@@ -283,8 +301,8 @@ export default function TalonariosPage() {
 
         {/* Talonarios grid */}
         {loading ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[...Array(6)].map((_, i) => (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {[...Array(4)].map((_, i) => (
               <Skeleton key={i} className="h-48 w-full rounded-xl" />
             ))}
           </div>
@@ -299,61 +317,161 @@ export default function TalonariosPage() {
             </Empty>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {talonarios.map(tal => {
-              const totalComprobantes = tal.comprobantes.length
-              const pagados = tal.comprobantes.filter((c: any) => c.pagado).length
-              const pendientes = totalComprobantes - pagados
-              const totalMonto = tal.comprobantes.reduce((s: number, c: any) => s + c.monto, 0)
-              const montoPagado = tal.comprobantes.filter((c: any) => c.pagado).reduce((s: number, c: any) => s + c.monto, 0)
-              const pct = totalComprobantes > 0 ? Math.round((pagados / totalComprobantes) * 100) : 0
+          <>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {paginatedTalonarios.map(tal => {
+                const totalComprobantes = tal.comprobantes.length
+                const pagados = tal.comprobantes.filter((c: any) => c.pagado).length
+                const pendientes = totalComprobantes - pagados
+                const totalMonto = tal.comprobantes.reduce((s: number, c: any) => s + c.monto, 0)
+                const montoPagado = tal.comprobantes.filter((c: any) => c.pagado).reduce((s: number, c: any) => s + c.monto, 0)
+                const pct = totalComprobantes > 0 ? Math.round((pagados / totalComprobantes) * 100) : 0
 
-              return (
-                <Card key={tal.id} className="flex flex-col py-0">
-                  <CardHeader className="flex flex-row items-start justify-between border-b px-5 py-4">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm truncate">{tal.estudiante.nombre}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {tal.grado || tal.estudiante.grado} {tal.seccion || tal.estudiante.seccion} · NIE: {tal.estudiante.nie}
-                      </p>
+                return (
+                  <Card key={tal.id} className="flex flex-col py-0">
+                    <CardHeader className="flex flex-row items-start justify-between border-b px-5 py-4">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm truncate">{tal.estudiante.nombre}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {tal.grado || tal.estudiante.grado} {tal.seccion || tal.estudiante.seccion} · NIE: {tal.estudiante.nie}
+                        </p>
 
-                    </div>
-                    <Badge variant="secondary" className="shrink-0 font-bold">{tal.anio}</Badge>
-                  </CardHeader>
-
-                  <CardContent className="flex flex-col gap-3 px-5 py-4 flex-1">
-                    <div>
-                      <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                        <span>{pagados}/{totalComprobantes} pagados</span>
-                        <span>{pct}%</span>
                       </div>
-                      <Progress value={pct} className="h-1.5" />
-                    </div>
+                      <Badge variant="secondary" className="shrink-0 font-bold">{tal.anio}</Badge>
+                    </CardHeader>
 
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="flex items-center gap-1 text-emerald-600 font-medium">
-                        <CheckCircle className="size-3" /> {formatCurrency(montoPagado)} cobrado
-                      </span>
-                      <span className="flex items-center gap-1 text-amber-600 font-medium">
-                        <Clock className="size-3" /> {pendientes} pendientes
-                      </span>
-                    </div>
-                  </CardContent>
+                    <CardContent className="flex flex-col gap-3 px-5 py-4 flex-1">
+                      <div>
+                        <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                          <span>{pagados}/{totalComprobantes} pagados</span>
+                          <span>{pct}%</span>
+                        </div>
+                        <Progress value={pct} className="h-1.5" />
+                      </div>
 
-                  <CardFooter className="gap-2 border-t px-5 py-3">
-                    <Button variant="secondary" size="sm" className="flex-1" asChild>
-                      <Link href={`/talonarios/${tal.id}`}>Ver detalle</Link>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-1 text-emerald-600 font-medium">
+                          <CheckCircle className="size-3" /> {formatCurrency(montoPagado)} cobrado
+                        </span>
+                        <span className="flex items-center gap-1 text-amber-600 font-medium">
+                          <Clock className="size-3" /> {pendientes} pendientes
+                        </span>
+                      </div>
+                    </CardContent>
+
+                    <CardFooter className="gap-2 border-t px-5 py-3">
+                      <Button variant="secondary" size="sm" className="flex-1" asChild>
+                        <Link href={`/talonarios/${tal.id}`}>Ver detalle</Link>
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/talonarios/${tal.id}/imprimir`}>
+                          <Printer className="size-3.5" /> Imprimir
+                        </Link>
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                )
+              })}
+            </div>
+
+            {/* Pagination Footer */}
+            {totalPages > 1 && (
+              <Card className="py-0">
+                <CardFooter className="flex flex-col gap-3 border-t py-3 px-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="text-xs text-muted-foreground">
+                    <p>
+                      Mostrando <span className="font-medium">{Math.min(startIdx + 1, totalItems)}</span> a{' '}
+                      <span className="font-medium">{Math.min(endIdx, totalItems)}</span> de{' '}
+                      <span className="font-semibold">{totalItems}</span> talonario{totalItems !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="h-8 px-2 text-xs font-medium hidden sm:inline-flex"
+                    >
+                      Anterior
                     </Button>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/talonarios/${tal.id}/imprimir`}>
-                        <Printer className="size-3.5" /> Imprimir
-                      </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="h-8 w-8 p-0 sm:hidden"
+                    >
+                      ←
                     </Button>
-                  </CardFooter>
-                </Card>
-              )
-            })}
-          </div>
+
+                    {totalPages <= 7 ? (
+                      Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handlePageChange(page)}
+                          className="h-8 w-8 p-0 text-xs font-medium"
+                        >
+                          {page}
+                        </Button>
+                      ))
+                    ) : (
+                      <>
+                        {Array.from({ length: 3 }, (_, i) => i + 1).map(page => (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => handlePageChange(page)}
+                            className="h-8 w-8 p-0 text-xs font-medium"
+                          >
+                            {page}
+                          </Button>
+                        ))}
+
+                        <span className="flex h-8 w-8 items-center justify-center text-xs text-muted-foreground">
+                          ...
+                        </span>
+
+                        {Array.from({ length: 3 }, (_, i) => totalPages - 2 + i).map(page => (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => handlePageChange(page)}
+                            className="h-8 w-8 p-0 text-xs font-medium"
+                          >
+                            {page}
+                          </Button>
+                        ))}
+                      </>
+                    )}
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="h-8 px-2 text-xs font-medium hidden sm:inline-flex"
+                    >
+                      Siguiente
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="h-8 w-8 p-0 sm:hidden"
+                    >
+                      →
+                    </Button>
+                  </div>
+                </CardFooter>
+              </Card>
+            )}
+          </>
         )}
       </div>
     </div>

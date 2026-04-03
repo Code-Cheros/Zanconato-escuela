@@ -48,6 +48,8 @@ interface Usuario {
   creadoEn: string
 }
 
+const ITEMS_PER_PAGE = 10
+
 export default function UsuariosPage() {
   const { data: session } = useSession()
   const currentUserRol = (session?.user as any)?.rol
@@ -55,6 +57,7 @@ export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
 
   const fetchUsuarios = async () => {
     setLoading(true)
@@ -63,6 +66,7 @@ export default function UsuariosPage() {
       const data = await res.json()
       if (res.ok) {
         setUsuarios(Array.isArray(data) ? data : [])
+        setCurrentPage(1)
       } else {
         toast.error(data.error || 'Error al cargar usuarios')
       }
@@ -102,6 +106,22 @@ export default function UsuariosPage() {
     u.nombre.toLowerCase().includes(search.toLowerCase()) || 
     u.email.toLowerCase().includes(search.toLowerCase())
   )
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search])
+
+  const totalItems = filteredUsuarios.length
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIdx = startIdx + ITEMS_PER_PAGE
+  const paginatedUsuarios = filteredUsuarios.slice(startIdx, endIdx)
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
+    }
+  }
 
   if (currentUserRol !== 'ADMINISTRATIVO' && !loading) {
     return (
@@ -177,7 +197,7 @@ export default function UsuariosPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredUsuarios.map(user => (
+                  paginatedUsuarios.map(user => (
                     <TableRow key={user.id}>
                       <TableCell className="px-4 py-3 font-medium">{user.nombre}</TableCell>
                       <TableCell className="px-4 py-3 text-muted-foreground">
@@ -261,7 +281,7 @@ export default function UsuariosPage() {
               </Empty>
             ) : (
               <ul className="divide-y">
-                {filteredUsuarios.map(user => (
+                {paginatedUsuarios.map(user => (
                   <li key={user.id} className="p-4">
                     <div className="flex items-start justify-between gap-2">
                        <div className="min-w-0">
@@ -303,8 +323,100 @@ export default function UsuariosPage() {
           </div>
 
           {!loading && filteredUsuarios.length > 0 && (
-            <CardFooter className="border-t py-3 text-xs text-muted-foreground">
-              {filteredUsuarios.length} usuario{filteredUsuarios.length !== 1 ? 's' : ''} administrativ{filteredUsuarios.length !== 1 ? 'os' : 'o'}
+            <CardFooter className="flex flex-col gap-3 border-t py-3 px-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-xs text-muted-foreground">
+                <p>
+                  Mostrando <span className="font-medium">{Math.min(startIdx + 1, totalItems)}</span> a{' '}
+                  <span className="font-medium">{Math.min(endIdx, totalItems)}</span> de{' '}
+                  <span className="font-semibold">{totalItems}</span> usuario{totalItems !== 1 ? 's' : ''}
+                </p>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="h-8 px-2 text-xs font-medium hidden sm:inline-flex"
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="h-8 w-8 p-0 sm:hidden"
+                  >
+                    ←
+                  </Button>
+
+                  {totalPages <= 7 ? (
+                    Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className="h-8 w-8 p-0 text-xs font-medium"
+                      >
+                        {page}
+                      </Button>
+                    ))
+                  ) : (
+                    <>
+                      {Array.from({ length: 3 }, (_, i) => i + 1).map(page => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handlePageChange(page)}
+                          className="h-8 w-8 p-0 text-xs font-medium"
+                        >
+                          {page}
+                        </Button>
+                      ))}
+
+                      <span className="flex h-8 w-8 items-center justify-center text-xs text-muted-foreground">
+                        ...
+                      </span>
+
+                      {Array.from({ length: 3 }, (_, i) => totalPages - 2 + i).map(page => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handlePageChange(page)}
+                          className="h-8 w-8 p-0 text-xs font-medium"
+                        >
+                          {page}
+                        </Button>
+                      ))}
+                    </>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="h-8 px-2 text-xs font-medium hidden sm:inline-flex"
+                  >
+                    Siguiente
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="h-8 w-8 p-0 sm:hidden"
+                  >
+                    →
+                  </Button>
+                </div>
+              )}
             </CardFooter>
           )}
         </Card>

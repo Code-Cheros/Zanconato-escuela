@@ -67,10 +67,11 @@ model Pago {
   id            String      @id @default(cuid())
   estudianteId  String
   estudiante    Estudiante  @relation(fields: [estudianteId], references: [id])
-  comprobanteId String      @unique
-  comprobante   Comprobante @relation(fields: [comprobanteId], references: [id])
+  comprobanteId String?     @unique
+  comprobante   Comprobante? @relation(fields: [comprobanteId], references: [id])
   monto         Float
   tipo          TipoPago
+  tipoPersonalizado String?
   fecha         DateTime    @default(now())
   registradoPor String
   notas         String?
@@ -81,6 +82,7 @@ enum TipoPago {
   PAPELERIA
   COLEGIATURA
   ALIMENTACION
+  OTRO
 }
 
 model PasswordResetToken {
