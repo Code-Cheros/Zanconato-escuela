@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getLogoBase64 } from '@/lib/reportUtils'
 
 const prismaCompat = prisma as any
 
@@ -59,27 +60,24 @@ export async function GET(req: NextRequest) {
   const seccion = searchParams.get('seccion') || ''
   const tipoPago = searchParams.get('tipoPago') || ''
 
-  const pagos = await prisma.pago.findMany({
-    where: {
-      fecha: { gte: inicio, lte: fin },
-      ...(tipoPago && { tipo: tipoPago as any }),
-      estudiante: {
-        ...(grado && { grado: { contains: grado, mode: 'insensitive' } }),
-        ...(seccion && { seccion: { contains: seccion, mode: 'insensitive' } }),
+  const [pagos, logoBase64] = await Promise.all([
+    prisma.pago.findMany({
+      where: {
+        fecha: { gte: inicio, lte: fin },
+        ...(tipoPago && { tipo: tipoPago as any }),
+        estudiante: {
+          ...(grado && { grado: { contains: grado, mode: 'insensitive' } }),
+          ...(seccion && { seccion: { contains: seccion, mode: 'insensitive' } }),
+        },
       },
-    },
-    include: {
-      estudiante: { select: { nombre: true, nie: true, grado: true, seccion: true } },
-      comprobante: { select: { mes: true } },
-    },
-    orderBy: { fecha: 'asc' },
-  })
-
-  const config = await prismaCompat.configuracionSistema.upsert({
-    where: { id: 'global' },
-    update: {},
-    create: { id: 'global', montoMatricula: 10, montoMensualidad: 20, montoMora: 0, usarMora: false },
-  })
+      include: {
+        estudiante: { select: { nombre: true, nie: true, grado: true, seccion: true } },
+        comprobante: { select: { mes: true } },
+      },
+      orderBy: { fecha: 'asc' },
+    }),
+    getLogoBase64(),
+  ])
 
   const resumen: Record<string, number> = { MATRICULA: 0, PAPELERIA: 0, COLEGIATURA: 0, ALIMENTACION: 0, OTRO: 0 }
   for (const p of pagos) resumen[p.tipo] = (resumen[p.tipo] || 0) + p.monto
@@ -92,12 +90,12 @@ export async function GET(req: NextRequest) {
   ].filter(Boolean).join(' · ')
 
   const tableRows = pagos.map((p, i) =>
-    `<tr>
+    `<tr ${i % 2 === 0 ? '' : 'style="background:#f7fafc"'}>
       <td>${i + 1}</td>
       <td>${p.estudiante.nombre}</td>
       <td>${p.estudiante.nie}</td>
       <td>${p.estudiante.grado} ${p.estudiante.seccion}</td>
-      <td>${p.tipo === 'OTRO' ? (p.tipoPersonalizado || 'Otro') : (TIPO_LABELS[p.tipo] || p.tipo)}</td>
+      <td>${((p as any).tipo as string) === 'OTRO' ? ((p as any).tipoPersonalizado || 'Otro') : (TIPO_LABELS[(p as any).tipo as string] || (p as any).tipo)}</td>
       <td>${p.comprobante?.mes || '—'}</td>
       <td style="text-align:right">${formatUSD(p.monto)}</td>
       <td>${new Date(p.fecha).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}</td>
@@ -135,7 +133,7 @@ export async function GET(req: NextRequest) {
 </head>
 <body>
   <div class="header">
-    ${config.logoUrl ? `<img src="${config.logoUrl}" alt="Logo" style="height:56px;object-fit:contain;margin-bottom:10px;" />` : ''}
+    ${logoBase64 ? `<img src="${logoBase64}" alt="Logo" style="height:56px;object-fit:contain;margin-bottom:10px;" />` : ''}
     <h1>Complejo Educativo Católico Zaconato</h1>
     <h2>${titulo}</h2>
   </div>

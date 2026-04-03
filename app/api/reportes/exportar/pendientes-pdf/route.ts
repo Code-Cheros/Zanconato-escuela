@@ -3,13 +3,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getLogoBase64 } from '@/lib/reportUtils'
 
 const TIPO_LABELS: Record<string, string> = {
   MATRICULA: 'Matrícula', PAPELERIA: 'Papelería',
   COLEGIATURA: 'Colegiatura', ALIMENTACION: 'Alimentación',
 }
-
-const prismaCompat = prisma as any
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -26,7 +25,7 @@ export async function GET(req: NextRequest) {
   const seccion = searchParams.get('seccion') || ''
   const tipoPago = searchParams.get('tipoPago') || ''
 
-  const [comprobantes, config] = await Promise.all([
+  const [comprobantes, logoBase64] = await Promise.all([
     prisma.comprobante.findMany({
       where: {
         pagado: false,
@@ -54,16 +53,12 @@ export async function GET(req: NextRequest) {
         { orden: 'asc' },
       ],
     }),
-    prismaCompat.configuracionSistema.upsert({
-      where: { id: 'global' },
-      update: {},
-      create: { id: 'global', montoMatricula: 10, montoMensualidad: 20, montoMora: 0, usarMora: false },
-    }),
+    getLogoBase64(),
   ])
 
   const formatUSD = (n: number) => `$${n.toFixed(2)}`
   const montoTotal = comprobantes.reduce((s, c) => s + c.monto, 0)
-  const resumen: Record<string, number> = { MATRICULA: 0, PAPELERIA: 0, COLEGIATURA: 0, ALIMENTACION: 0 }
+  const resumen: Record<string, number> = {}
   for (const c of comprobantes) resumen[c.tipo] = (resumen[c.tipo] || 0) + 1
 
   const filtros = [
@@ -113,7 +108,7 @@ export async function GET(req: NextRequest) {
 </head>
 <body>
   <div class="header">
-    ${config.logoUrl ? `<img src="${config.logoUrl}" alt="Logo" style="height:56px;object-fit:contain;margin-bottom:10px;" />` : ''}
+    ${logoBase64 ? `<img src="${logoBase64}" alt="Logo" style="height:56px;object-fit:contain;margin-bottom:10px;" />` : ''}
     <h1>Complejo Educativo Católico Zaconato</h1>
     <h2>Reporte de Pagos Pendientes — Año ${anio}</h2>
   </div>
