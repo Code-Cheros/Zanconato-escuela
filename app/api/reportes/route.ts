@@ -14,7 +14,6 @@ function buildRangeFromParams(params: URLSearchParams): { inicio: Date; fin: Dat
     const fin = new Date(fecha); fin.setHours(23, 59, 59, 999)
     return { inicio, fin, label: `Reporte Diario — ${fecha}` }
   }
-
   if (tipo === 'mensual') {
     const mes = parseInt(params.get('mes') || String(hoy.getMonth() + 1))
     const anio = parseInt(params.get('anio') || String(hoy.getFullYear()))
@@ -23,14 +22,12 @@ function buildRangeFromParams(params: URLSearchParams): { inicio: Date; fin: Dat
     const nombreMes = inicio.toLocaleString('es-SV', { month: 'long' })
     return { inicio, fin, label: `Reporte Mensual — ${nombreMes} ${anio}` }
   }
-
   if (tipo === 'anual') {
     const anio = parseInt(params.get('anio') || String(hoy.getFullYear()))
     const inicio = new Date(anio, 0, 1)
     const fin = new Date(anio, 11, 31, 23, 59, 59, 999)
     return { inicio, fin, label: `Reporte Anual — ${anio}` }
   }
-
   // personalizado
   const desde = params.get('desde') || hoy.toISOString().split('T')[0]
   const hasta = params.get('hasta') || hoy.toISOString().split('T')[0]
@@ -53,10 +50,12 @@ export async function GET(req: NextRequest) {
 
   const grado = searchParams.get('grado') || ''
   const seccion = searchParams.get('seccion') || ''
+  const tipoPago = searchParams.get('tipoPago') || '' // MATRICULA|COLEGIATURA|ALIMENTACION|PAPELERIA|OTRO
 
   const pagos = await prisma.pago.findMany({
     where: {
       fecha: { gte: inicio, lte: fin },
+      ...(tipoPago && { tipo: tipoPago as any }),
       estudiante: {
         ...(grado && { grado: { contains: grado, mode: 'insensitive' } }),
         ...(seccion && { seccion: { contains: seccion, mode: 'insensitive' } }),
