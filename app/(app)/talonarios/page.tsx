@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Header from '@/components/layout/Header'
-import { Plus, BookOpen, Printer, CheckCircle, Clock } from 'lucide-react'
+import { Plus, BookOpen, Printer, CheckCircle, Clock, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { formatCurrency, TIPO_PAGO_LABELS, GRADOS, SECCIONES } from '@/lib/utils'
 import Link from 'next/link'
@@ -15,6 +15,17 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import {
   Empty,
   EmptyDescription,
@@ -46,6 +57,7 @@ export default function TalonariosPage() {
   const [grado, setGrado] = useState('')
   const [seccion, setSeccion] = useState('')
   const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [filterAnio, setFilterAnio] = useState(String(new Date().getFullYear()))
   const [filterNombre, setFilterNombre] = useState('')
   const [filterNie, setFilterNie] = useState('')
@@ -100,6 +112,24 @@ export default function TalonariosPage() {
       }
 
     } catch { toast.error('Error buscando') }
+  }
+
+  const handleEliminar = async (id: string) => {
+    setDeletingId(id)
+    try {
+      const res = await fetch(`/api/talonarios/${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success('Talonario eliminado correctamente')
+        fetchTalonarios()
+      } else {
+        toast.error(data.error || 'Error al eliminar el talonario')
+      }
+    } catch {
+      toast.error('Error de conexión')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   const handleCrear = async () => {
@@ -368,6 +398,39 @@ export default function TalonariosPage() {
                           <Printer className="size-3.5" /> Imprimir
                         </Link>
                       </Button>
+                      {tal.comprobantes.every((c: any) => !c.pagado) && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:bg-destructive/10 hover:text-destructive px-2"
+                              disabled={deletingId === tal.id}
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar talonario?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Estás por eliminar el talonario <strong>{tal.anio}</strong> de{' '}
+                                <strong>{tal.estudiante.nombre}</strong>. Este talonario no tiene pagos
+                                registrados. Esta acción no se puede deshacer.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => handleEliminar(tal.id)}
+                              >
+                                Sí, eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </CardFooter>
                   </Card>
                 )

@@ -1,9 +1,9 @@
 // app/(app)/talonarios/[id]/page.tsx
 'use client'
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Header from '@/components/layout/Header'
-import { ArrowLeft, Printer, CheckCircle, Circle, BookOpen } from 'lucide-react'
+import { ArrowLeft, Printer, CheckCircle, Circle, BookOpen, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { formatCurrency, TIPO_PAGO_LABELS, formatDate } from '@/lib/utils'
@@ -12,6 +12,17 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import {
   Empty,
   EmptyHeader,
@@ -29,8 +40,10 @@ const typeBadgeClass: Record<string, string> = {
 
 export default function TalonarioDetailPage() {
   const { id } = useParams()
+  const router = useRouter()
   const [talonario, setTalonario] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     fetch(`/api/talonarios/${id}`)
@@ -38,6 +51,24 @@ export default function TalonarioDetailPage() {
       .then(d => { setTalonario(d); setLoading(false) })
       .catch(() => { toast.error('Error'); setLoading(false) })
   }, [id])
+
+  const handleEliminar = async () => {
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/talonarios/${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success('Talonario eliminado correctamente')
+        router.push('/talonarios')
+      } else {
+        toast.error(data.error || 'Error al eliminar el talonario')
+      }
+    } catch {
+      toast.error('Error de conexión')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   if (loading) return (
     <div className="flex flex-col h-full">
@@ -88,11 +119,48 @@ export default function TalonarioDetailPage() {
               <ArrowLeft className="size-4" /> Volver
             </Link>
           </Button>
-          <Button variant="secondary" asChild>
-            <Link href={`/talonarios/${id}/imprimir`}>
-              <Printer className="size-4" /> Imprimir Talonario
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" asChild>
+              <Link href={`/talonarios/${id}/imprimir`}>
+                <Printer className="size-4" /> Imprimir Talonario
+              </Link>
+            </Button>
+            {talonario.comprobantes.every((c: any) => !c.pagado) && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="default"
+                    className="text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive gap-1.5"
+                    disabled={deleting}
+                  >
+                    <Trash2 className="size-4" />
+                    Eliminar
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Eliminar talonario?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Estás por eliminar el talonario <strong>{talonario.anio}</strong> de{' '}
+                      <strong>{talonario.estudiante.nombre}</strong>. Este talonario no tiene pagos
+                      registrados. Esta acción no se puede deshacer y eliminará todos sus
+                      comprobantes.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={handleEliminar}
+                    >
+                      Sí, eliminar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </div>
 
         {/* Summary stats */}
