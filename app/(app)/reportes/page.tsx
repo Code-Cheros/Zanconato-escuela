@@ -2,7 +2,12 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import Header from '@/components/layout/Header'
-import { FileSpreadsheet, FileText, TrendingUp, Filter, X, AlertCircle, Users } from 'lucide-react'
+import { 
+  FileSpreadsheet, FileText, TrendingUp, Filter, X, 
+  AlertCircle, Users, Landmark, Utensils, 
+  ClipboardCheck, Package, Receipt, Calendar, DollarSign,
+  ChevronRight
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { formatCurrency, TIPO_PAGO_LABELS, GRADOS, SECCIONES } from '@/lib/utils'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -75,11 +80,11 @@ const typeBadgeClass: Record<string, string> = {
   OTRO: 'border-slate-200 bg-slate-50 text-slate-700',
 }
 const resumenItems = [
-  { tipo: 'COLEGIATURA', label: 'Colegiatura', icon: '💰' },
-  { tipo: 'ALIMENTACION', label: 'Alimentación', icon: '🍽️' },
-  { tipo: 'MATRICULA', label: 'Matrícula', icon: '📋' },
-  { tipo: 'PAPELERIA', label: 'Papelería', icon: '📦' },
-  { tipo: 'OTRO', label: 'Otros', icon: '🧾' },
+  { tipo: 'COLEGIATURA', label: 'Colegiatura', icon: Landmark, color: 'text-blue-600', bg: 'bg-blue-50' },
+  { tipo: 'ALIMENTACION', label: 'Alimentación', icon: Utensils, color: 'text-green-600', bg: 'bg-green-50' },
+  { tipo: 'MATRICULA', label: 'Matrícula', icon: ClipboardCheck, color: 'text-amber-600', bg: 'bg-amber-50' },
+  { tipo: 'PAPELERIA', label: 'Papelería', icon: Package, color: 'text-purple-600', bg: 'bg-purple-50' },
+  { tipo: 'OTRO', label: 'Otros', icon: Receipt, color: 'text-slate-600', bg: 'bg-slate-50' },
 ]
 const ITEMS_PER_PAGE = 10
 
@@ -394,13 +399,18 @@ export default function ReportesPage() {
               <>
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
                   {resumenItems.map(item => (
-                    <Card key={item.tipo} className={cn('border py-3', typeBadgeClass[item.tipo]?.split(' ')[0])}>
-                      <CardContent className="px-4 py-0">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-base">{item.icon}</span>
-                          <span className={cn('text-[10px] font-semibold uppercase', typeBadgeClass[item.tipo]?.split(' ').slice(2).join(' '))}>{item.label}</span>
+                    <Card key={item.tipo} className="overflow-hidden border-none shadow-sm bg-white/50 backdrop-blur-sm group hover:shadow-md transition-all duration-300">
+                      <CardContent className="p-4 relative">
+                        <div className={cn("absolute -right-2 -top-2 opacity-10 group-hover:scale-110 transition-transform duration-500", item.color)}>
+                          <item.icon size={56} />
                         </div>
-                        <p className={cn('text-lg font-bold tabular-nums', typeBadgeClass[item.tipo]?.split(' ').slice(2).join(' '))}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={cn("p-1.5 rounded-lg", item.bg, item.color)}>
+                            <item.icon size={14} />
+                          </div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{item.label}</span>
+                        </div>
+                        <p className="text-xl font-bold tabular-nums tracking-tight">
                           {formatCurrency(reporte.resumen[item.tipo] || 0)}
                         </p>
                       </CardContent>
@@ -408,20 +418,28 @@ export default function ReportesPage() {
                   ))}
                 </div>
 
-                <Card className="border-0 bg-primary py-4 text-primary-foreground">
-                  <CardContent className="flex items-center justify-between px-5">
-                    <div className="flex items-center gap-3">
-                      <TrendingUp className="size-5 opacity-80" />
-                      <div>
-                        <p className="text-sm opacity-80">{reporte.label}</p>
-                        <p className="text-xs opacity-60">
+                <Card className="overflow-hidden border-none shadow-lg bg-primary text-primary-foreground rounded-2xl">
+                  <CardContent className="p-0 relative flex items-center h-24">
+                    <div className="absolute right-0 top-0 h-full w-1/3 opacity-10 flex items-center justify-end pr-8 pointer-events-none">
+                      <TrendingUp size={120} />
+                    </div>
+                    <div className="flex w-full items-center justify-between px-8 z-10">
+                      <div className="flex items-center gap-5">
+                        <div className="p-3 rounded-xl bg-white/20 backdrop-blur-md shadow-sm">
+                          <TrendingUp className="size-6 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-widest text-white/70 mb-0.5">Total Recaudado</p>
+                          <p className="text-sm font-medium text-white/90">{reporte.label}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-3xl font-black tabular-nums tracking-tighter shadow-sm">{formatCurrency(reporte.total)}</p>
+                        <p className="text-[10px] uppercase font-bold text-white/60 tracking-wider">
                           {reporte.cantidad} transacciones
-                          {tipoPago && ` · ${TIPO_PAGO_LABELS[tipoPago]}`}
-                          {(grado || seccion) && ` · ${[grado, seccion].filter(Boolean).join(' ')}`}
                         </p>
                       </div>
                     </div>
-                    <p className="text-2xl font-bold tabular-nums">{formatCurrency(reporte.total)}</p>
                   </CardContent>
                 </Card>
 
@@ -610,16 +628,26 @@ export default function ReportesPage() {
                 {/* Stat cards */}
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {[
-                    { label: 'Matrícula', value: pendientes.resumen.MATRICULA || 0, color: 'text-amber-700 bg-amber-50 border-amber-200' },
-                    { label: 'Colegiatura', value: pendientes.resumen.COLEGIATURA || 0, color: 'text-blue-700 bg-blue-50 border-blue-200' },
-                    { label: 'Alimentación', value: pendientes.resumen.ALIMENTACION || 0, color: 'text-green-700 bg-green-50 border-green-200' },
-                    { label: 'Papelería', value: pendientes.resumen.PAPELERIA || 0, color: 'text-purple-700 bg-purple-50 border-purple-200' },
+                    { tipo: 'MATRICULA', label: 'Matrícula', icon: ClipboardCheck, color: 'text-amber-600', bg: 'bg-amber-50' },
+                    { tipo: 'COLEGIATURA', label: 'Colegiatura', icon: Landmark, color: 'text-blue-600', bg: 'bg-blue-50' },
+                    { tipo: 'ALIMENTACION', label: 'Alimentación', icon: Utensils, color: 'text-green-600', bg: 'bg-green-50' },
+                    { tipo: 'PAPELERIA', label: 'Papelería', icon: Package, color: 'text-purple-600', bg: 'bg-purple-50' },
                   ].map(item => (
-                    <Card key={item.label} className={cn('border py-3', item.color.split(' ')[1])}>
-                      <CardContent className="px-4 py-0">
-                        <p className={cn('text-[10px] font-semibold uppercase mb-1', item.color.split(' ')[0])}>{item.label}</p>
-                        <p className={cn('text-2xl font-bold tabular-nums', item.color.split(' ')[0])}>{item.value}</p>
-                        <p className="text-[10px] text-muted-foreground">pendientes</p>
+                    <Card key={item.label} className="overflow-hidden border-none shadow-sm bg-white/50 backdrop-blur-sm group hover:shadow-md transition-all duration-300">
+                      <CardContent className="p-4 relative">
+                        <div className={cn("absolute -right-2 -top-2 opacity-10 group-hover:scale-110 transition-transform duration-500", item.color)}>
+                          <item.icon size={56} />
+                        </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={cn("p-1.5 rounded-lg", item.bg, item.color)}>
+                            <item.icon size={14} />
+                          </div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{item.label}</span>
+                        </div>
+                        <p className={cn("text-2xl font-bold tabular-nums tracking-tight", item.color)}>
+                          {pendientes.resumen[item.tipo] || 0}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">pagos pendientes</p>
                       </CardContent>
                     </Card>
                   ))}
