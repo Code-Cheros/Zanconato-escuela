@@ -7,7 +7,7 @@ import { getLogoBase64 } from '@/lib/reportUtils'
 
 const TIPO_LABELS: Record<string, string> = {
   MATRICULA: 'Matrícula', PAPELERIA: 'Papelería',
-  COLEGIATURA: 'Colegiatura', ALIMENTACION: 'Alimentación',
+  COLEGIATURA: 'Colegiatura', ALIMENTACION: 'Alimentación', OTRO: 'Otro',
 }
 
 export async function GET(req: NextRequest) {
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
         talonario: {
           include: {
             estudiante: {
-              select: { nombre: true, nie: true, grado: true, seccion: true, encargado: true },
+              select: { nombre: true, nie: true, grado: true, seccion: true, encargado: true, telefono: true },
             },
           },
         },
@@ -56,105 +56,108 @@ export async function GET(req: NextRequest) {
     getLogoBase64(),
   ])
 
+  const datosValidos = comprobantes.filter(c => c.talonario?.estudiante)
+  const montoTotal = datosValidos.reduce((s, c) => s + c.monto, 0)
   const formatUSD = (n: number) => `$${n.toFixed(2)}`
-  const montoTotal = comprobantes.reduce((s, c) => s + c.monto, 0)
-  const resumen: Record<string, number> = {}
-  for (const c of comprobantes) resumen[c.tipo] = (resumen[c.tipo] || 0) + 1
 
-  const filtros = [
-    tipoPago ? `Tipo: ${TIPO_LABELS[tipoPago] || tipoPago}` : null,
-    grado ? `Grado: ${grado}` : null,
-    seccion ? `Sección: ${seccion}` : null,
-  ].filter(Boolean).join(' · ')
-
-  const tableRows = comprobantes.map((c, i) =>
-    `<tr>
+  const tableRows = datosValidos.map((c, i) => {
+    const s = c.talonario!.estudiante
+    return `<tr ${i % 2 === 0 ? '' : 'style="background:#f7fafc"'}>
       <td>${i + 1}</td>
-      <td>${c.talonario.estudiante.nombre}</td>
-      <td>${c.talonario.estudiante.nie}</td>
-      <td>${c.talonario.estudiante.grado} ${c.talonario.estudiante.seccion}</td>
-      <td>${c.talonario.estudiante.encargado || '—'}</td>
+      <td>${s.nombre}</td>
+      <td>${s.nie}</td>
+      <td>${s.grado} ${s.seccion}</td>
       <td>${TIPO_LABELS[c.tipo] || c.tipo}</td>
       <td>${c.mes || '—'}</td>
-      <td style="text-align:right;color:#c53030">${formatUSD(c.monto)}</td>
+      <td style="text-align:right">${formatUSD(c.monto)}</td>
+      <td>${s.telefono || '—'}</td>
     </tr>`
-  ).join('')
+  }).join('')
 
   const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Reporte de Pendientes ${anio}</title>
+  <title>Reporte de Pagos Pendientes</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 30px; color: #1a202c; font-size: 12px; }
+    body { font-family: Arial, sans-serif; margin: 30px; color: #1a202c; font-size: 11px; }
     .header { text-align: center; border-bottom: 3px solid #c53030; padding-bottom: 16px; margin-bottom: 24px; }
-    .header h1 { font-size: 20px; color: #c53030; margin: 0 0 4px; }
-    .header h2 { font-size: 14px; font-weight: normal; margin: 0; color: #4a5568; }
-    .meta { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11px; color: #4a5568; flex-wrap: wrap; gap: 4px; }
-    .filtros { margin-bottom: 16px; font-size: 11px; color: #742a2a; background: #fff5f5; padding: 6px 10px; border-radius: 4px; border-left: 3px solid #c53030; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-    th { background: #c53030; color: white; padding: 8px 6px; text-align: left; font-size: 11px; }
+    .header h1 { font-size: 18px; color: #c53030; margin: 0 0 4px; }
+    .header h2 { font-size: 13px; font-weight: normal; margin: 0; color: #4a5568; }
+    .meta { display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 10px; color: #4a5568; border-bottom: 1px solid #edf2f7; padding-bottom: 8px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th { background: #c53030; color: white; padding: 6px; text-align: left; font-size: 10px; text-transform: uppercase; }
     td { padding: 6px; border-bottom: 1px solid #e2e8f0; }
-    tr:nth-child(even) td { background: #fff5f5; }
-    .summary { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
-    .summary-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; flex: 1; min-width: 120px; border-left: 4px solid #c53030; }
-    .summary-card h3 { margin: 0 0 4px; font-size: 11px; color: #718096; }
-    .summary-card p { margin: 0; font-size: 20px; font-weight: bold; color: #c53030; }
-    .total-banner { background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px; padding: 14px 20px; margin-top: 16px; display: flex; justify-content: space-between; align-items: center; }
-    .total-banner span { font-size: 13px; color: #742a2a; }
-    .total-banner strong { font-size: 22px; color: #c53030; }
-    .footer { margin-top: 32px; border-top: 1px solid #e2e8f0; padding-top: 12px; font-size: 10px; color: #718096; display: flex; justify-content: space-between; }
+    .total-row td { background: #fff5f5 !important; font-weight: bold; border-top: 2px solid #c53030; }
+    .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+    .summary-card { border: 1px solid #e2e8f0; border-radius: 4px; padding: 8px 12px; }
+    .summary-card.total { border-left: 4px solid #c53030; background: #fff5f5; }
+    .summary-card h3 { margin: 0 0 2px; font-size: 10px; color: #718096; text-transform: uppercase; }
+    .summary-card p { margin: 0; font-size: 16px; font-weight: bold; color: #2d3748; }
+    .footer { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 10px; font-size: 9px; color: #a0aec0; text-align: center; }
   </style>
 </head>
 <body>
   <div class="header">
-    ${logoBase64 ? `<img src="${logoBase64}" alt="Logo" style="height:56px;object-fit:contain;margin-bottom:10px;" />` : ''}
+    ${logoBase64 ? `<img src="${logoBase64}" alt="Logo" style="height:50px;object-fit:contain;margin-bottom:8px;" />` : ''}
     <h1>Complejo Educativo Católico Zaconato</h1>
     <h2>Reporte de Pagos Pendientes — Año ${anio}</h2>
   </div>
+
   <div class="meta">
-    <span><strong>Año Escolar:</strong> ${anio}</span>
-    <span><strong>Total pendientes:</strong> ${comprobantes.length} comprobantes · ${new Set(comprobantes.map(c => c.talonario.estudiante.nie)).size} estudiantes</span>
+    <span><strong>Filtros:</strong> ${grado ? `Grado: ${grado}` : 'Todos'} ${seccion ? `| Sec: ${seccion}` : ''}</span>
+    <span><strong>Items:</strong> ${datosValidos.length}</span>
     <span><strong>Generado:</strong> ${new Date().toLocaleString('es-SV')}</span>
   </div>
-  ${filtros ? `<div class="filtros"><strong>Filtros aplicados:</strong> ${filtros}</div>` : ''}
 
   <table>
     <thead>
       <tr>
-        <th>#</th><th>Nombre del Estudiante</th><th>NIE</th>
-        <th>Grado/Sección</th><th>Encargado</th><th>Tipo Pendiente</th><th>Mes</th><th>Monto</th>
+        <th style="width:30px">#</th>
+        <th>Nombre del Estudiante</th>
+        <th style="width:70px">NIE</th>
+        <th style="width:80px">Grado/Sec</th>
+        <th>Concepto</th>
+        <th style="width:80px">Mes</th>
+        <th style="width:80px; text-align:right">Monto</th>
+        <th style="width:80px">Teléfono</th>
       </tr>
     </thead>
     <tbody>
       ${tableRows}
+      <tr class="total-row">
+        <td colspan="6" style="text-align:right">MONTO TOTAL PENDIENTE</td>
+        <td style="text-align:right">${formatUSD(montoTotal)}</td>
+        <td></td>
+      </tr>
     </tbody>
   </table>
 
   <div class="summary">
-    ${Object.entries(resumen).filter(([, v]) => v > 0).map(([tipo, count]) =>
-      `<div class="summary-card"><h3>${TIPO_LABELS[tipo] || tipo}</h3><p>${count} pendientes</p></div>`
-    ).join('')}
-  </div>
-
-  <div class="total-banner">
-    <span>Monto total pendiente de cobro (${comprobantes.length} comprobantes)</span>
-    <strong>${formatUSD(montoTotal)}</strong>
+    <div class="summary-card total">
+      <h3>Deducción de Cartera</h3>
+      <p>${formatUSD(montoTotal)}</p>
+    </div>
+    <div class="summary-card">
+      <h3>Estudiantes</h3>
+      <p>${new Set(datosValidos.map(v => v.talonario!.estudiante.nie)).size}</p>
+    </div>
+    <div class="summary-card">
+      <h3>Pagos Pendientes</h3>
+      <p>${datosValidos.length}</p>
+    </div>
   </div>
 
   <div class="footer">
-    <span>Complejo Educativo Católico Zaconato — Sistema de Gestión Escolar</span>
-    <span>Documento generado automáticamente</span>
+    Sistema de Control de Pagos Zaconato — Este documento tiene carácter informativo de cobro interno.
   </div>
 </body>
 </html>`
 
-  const label = `pendientes-${anio}${grado ? `-${grado}` : ''}${seccion ? `-${seccion}` : ''}`
-
   return new NextResponse(html, {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Content-Disposition': `attachment; filename="reporte-${label}.html"`,
+      'Content-Disposition': `attachment; filename="pendientes-${anio}.html"`,
     },
   })
 }

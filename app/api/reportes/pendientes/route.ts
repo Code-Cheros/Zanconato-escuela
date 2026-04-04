@@ -57,8 +57,11 @@ export async function GET(req: NextRequest) {
 
   // Agrupar por estudiante
   const porEstudiante: Record<string, { estudiante: any; comprobantes: any[] }> = {}
-  for (const c of comprobantes) {
-    const est = c.talonario.estudiante
+  
+  const datosValidos = comprobantes.filter(c => c.talonario?.estudiante)
+
+  for (const c of datosValidos) {
+    const est = c.talonario!.estudiante
     if (!porEstudiante[est.id]) {
       porEstudiante[est.id] = { estudiante: est, comprobantes: [] }
     }

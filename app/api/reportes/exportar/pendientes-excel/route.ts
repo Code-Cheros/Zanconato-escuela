@@ -100,15 +100,18 @@ export async function GET(req: NextRequest) {
   })
 
   // Data rows
-  comprobantes.forEach((c, i) => {
+  const datosValidos = comprobantes.filter(c => c.talonario?.estudiante)
+
+  datosValidos.forEach((c, i) => {
+    const student = c.talonario!.estudiante
     const row = worksheet.addRow([
       i + 1,
-      c.talonario.estudiante.nombre,
-      c.talonario.estudiante.nie,
-      c.talonario.estudiante.grado,
-      c.talonario.estudiante.seccion,
-      c.talonario.estudiante.encargado || '—',
-      c.talonario.estudiante.telefono || '—',
+      student.nombre,
+      student.nie,
+      student.grado,
+      student.seccion,
+      student.encargado || '—',
+      student.telefono || '—',
       TIPO_LABELS[c.tipo as string] || c.tipo,
       c.mes || '—',
       c.monto,
@@ -145,8 +148,8 @@ export async function GET(req: NextRequest) {
   resPeriodo.font = { size: 12, italic: true }
   resPeriodo.alignment = { horizontal: 'center' }
 
-  const montoTotal = comprobantes.reduce((s, c) => s + c.monto, 0)
-  const numEstudiantes = new Set(comprobantes.map(c => c.talonario.estudiante.nie)).size
+  const montoTotal = datosValidos.reduce((s, c) => s + c.monto, 0)
+  const numEstudiantes = new Set(datosValidos.map(c => c.talonario!.estudiante.nie)).size
 
   const detailStart = 6
   wsResumen.mergeCells(detailStart, 1, detailStart, 2)
@@ -185,7 +188,7 @@ export async function GET(req: NextRequest) {
     ALIMENTACION: { count: 0, monto: 0 },
     OTRO: { count: 0, monto: 0 },
   }
-  for (const c of comprobantes) {
+  for (const c of datosValidos) {
     if (resumen[c.tipo]) {
       resumen[c.tipo].count++
       resumen[c.tipo].monto += c.monto
