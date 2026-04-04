@@ -139,6 +139,21 @@ export default function ConfiguracionPage() {
     )
   }
 
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10
+
+  const totalItems = historial.length
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIdx = startIdx + ITEMS_PER_PAGE
+  const paginatedHistorial = historial.slice(startIdx, endIdx)
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
+    }
+  }
+
   return (
     <div className="flex flex-col h-full pb-10">
       <Header title="Configuración" subtitle="Parámetros globales del sistema" />
@@ -274,31 +289,72 @@ export default function ConfiguracionPage() {
             ) : historial.length === 0 ? (
               <p className="text-sm text-muted-foreground">No hay cambios registrados en el historial.</p>
             ) : (
-              <div className="rounded-md border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="h-10 px-4 text-left font-medium">Fecha</th>
-                      <th className="h-10 px-4 text-left font-medium">Usuario</th>
-                      <th className="h-10 px-4 text-left font-medium">Campo</th>
-                      <th className="h-10 px-4 text-left font-medium">Anterior</th>
-                      <th className="h-10 px-4 text-left font-medium">Nuevo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {historial.map((h) => (
-                      <tr key={h.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                        <td className="p-4 whitespace-nowrap text-xs text-muted-foreground">
-                          {new Date(h.fecha).toLocaleString()}
-                        </td>
-                        <td className="p-4 font-medium">{h.nombreUsuario}</td>
-                        <td className="p-4">{h.campo}</td>
-                        <td className="p-4 text-muted-foreground line-through decoration-red-400/50 decoration-2">{h.valorAnterior}</td>
-                        <td className="p-4 font-semibold text-emerald-600">{h.valorNuevo}</td>
+              <div className="space-y-4">
+                <div className="rounded-md border overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="h-10 px-4 text-left font-medium">Fecha</th>
+                        <th className="h-10 px-4 text-left font-medium">Usuario</th>
+                        <th className="h-10 px-4 text-left font-medium">Campo</th>
+                        <th className="h-10 px-4 text-left font-medium">Anterior</th>
+                        <th className="h-10 px-4 text-left font-medium">Nuevo</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {paginatedHistorial.map((h) => (
+                        <tr key={h.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                          <td className="p-4 whitespace-nowrap text-xs text-muted-foreground">
+                            {new Date(h.fecha).toLocaleString()}
+                          </td>
+                          <td className="p-4 font-medium">{h.nombreUsuario}</td>
+                          <td className="p-4">{h.campo}</td>
+                          <td className="p-4 text-muted-foreground line-through decoration-red-400/50 decoration-2">{h.valorAnterior}</td>
+                          <td className="p-4 font-semibold text-emerald-600">{h.valorNuevo}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      Mostrando {startIdx + 1} a {Math.min(endIdx, totalItems)} de {totalItems} cambios
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                      >
+                        Anterior
+                      </Button>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? 'default' : 'outline'}
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => handlePageChange(page)}
+                          >
+                            {page}
+                          </Button>
+                        ))}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                      >
+                        Siguiente
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
