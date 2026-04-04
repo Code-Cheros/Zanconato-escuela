@@ -169,10 +169,10 @@ export async function POST(req: NextRequest) {
         pagado: false,
       }))
 
-      // Otros comprobantes (independientes del talonario)
+      // Otros comprobantes anuales vinculados al primer talonario
       const otrosPagos = [
         {
-          talonarioId: null,
+          talonarioId: talonario.id,
           estudianteId: estudiante.id,
           tipo: 'MATRICULA',
           monto: config.montoMatricula,
@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
           pagado: false,
         },
         {
-          talonarioId: null,
+          talonarioId: talonario.id,
           estudianteId: estudiante.id,
           tipo: 'PAPELERIA',
           monto: config.montoPapeleria,
@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
           pagado: false,
         },
         ...MESES.map((mes, i) => ({
-          talonarioId: null,
+          talonarioId: talonario.id,
           estudianteId: estudiante.id,
           tipo: 'ALIMENTACION',
           monto: config.montoAlimentacion,

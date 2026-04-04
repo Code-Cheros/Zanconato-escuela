@@ -127,12 +127,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Datos requeridos faltantes' }, { status: 400 })
     }
 
-    // Mensualidad: se registra contra comprobante existente del talonario.
-    if (tipo === 'COLEGIATURA') {
-      if (!comprobanteId) {
-        return NextResponse.json({ error: 'Debe seleccionar un comprobante para mensualidad' }, { status: 400 })
-      }
-
+    // Si se proporciona comprobanteId, realizamos la vinculación y marcamos como pagado.
+    if (comprobanteId) {
       const comprobante = await prisma.comprobante.findUnique({
         where: { id: comprobanteId },
       })
@@ -142,7 +138,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (comprobante.pagado) {
-        return NextResponse.json({ error: 'Comprobante ya fue pagado' }, { status: 409 })
+        return NextResponse.json({ error: 'Este comprobante ya fue pagado' }, { status: 409 })
       }
 
       const pago = await prisma.$transaction(async (tx: any) => {

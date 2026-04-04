@@ -103,10 +103,12 @@ export default function TalonarioDetailPage() {
   )
 
   const grupos: Record<string, any[]> = {
-    MATRICULA: [], PAPELERIA: [], COLEGIATURA: [], ALIMENTACION: [],
+    COLEGIATURA: [],
   }
   for (const c of talonario.comprobantes) {
-    if (grupos[c.tipo]) grupos[c.tipo].push(c)
+    if (c.tipo === 'COLEGIATURA') {
+      grupos.COLEGIATURA.push(c)
+    }
   }
 
   const totalMonto = talonario.comprobantes.reduce((s: number, c: any) => s + c.monto, 0)

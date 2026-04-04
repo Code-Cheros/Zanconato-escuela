@@ -129,12 +129,34 @@ export async function POST(req: NextRequest) {
 
 
       const comprobantes = [
+        // Colegiaturas (10 meses según utils.ts)
         ...MESES.map((mes, i) => ({
           tipo: 'COLEGIATURA',
           monto: montoColegiatura || config.montoMensualidad,
           mes,
           orden: 1 + i,
         })),
+        // Matrícula anual
+        {
+          tipo: 'MATRICULA',
+          monto: montoMatricula || config.montoMatricula,
+          mes: null,
+          orden: 0,
+        },
+        // Papelería anual
+        {
+          tipo: 'PAPELERIA',
+          monto: config.montoPapeleria, // Usamos config si no viene en body
+          mes: null,
+          orden: 0,
+        },
+        // Alimentación mensual (si se incluye)
+        ...(incluirAlimentacion ? MESES.map((mes, i) => ({
+          tipo: 'ALIMENTACION',
+          monto: montoAlimentacion || config.montoAlimentacion,
+          mes,
+          orden: i,
+        })) : [])
       ]
 
       await tx.comprobante.createMany({

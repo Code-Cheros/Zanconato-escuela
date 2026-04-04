@@ -58,6 +58,7 @@ interface Comprobante {
   mes: string | null
   monto: number
   pagado: boolean
+  talonario?: { anio: number } | null
 }
 
 interface Talonario {
@@ -101,10 +102,12 @@ export default function PagosPage() {
   const [filterEstado, setFilterEstado] = useState('')
   const [filterAnio, setFilterAnio] = useState(String(new Date().getFullYear()))
   const [aniosDisponibles, setAniosDisponibles] = useState<number[]>([new Date().getFullYear()])
+  const [config, setConfig] = useState<any>(null)
 
   const [nie, setNie] = useState('')
   const [estudiante, setEstudiante] = useState<any>(null)
   const [talonarios, setTalonarios] = useState<Talonario[]>([])
+  const [adminComprobantes, setAdminComprobantes] = useState<Comprobante[]>([])
   const [selectedTalonario, setSelectedTalonario] = useState('')
   const [selectedComprobante, setSelectedComprobante] = useState('')
   const [selectedTipoPago, setSelectedTipoPago] = useState('')
@@ -113,6 +116,14 @@ export default function PagosPage() {
   const [montoManual, setMontoManual] = useState('')
   const [notas, setNotas] = useState('')
   const [savingPago, setSavingPago] = useState(false)
+
+  const fetchConfig = useCallback(async () => {
+    try {
+      const res = await fetch('/api/configuracion')
+      const data = await res.json()
+      if (res.ok) setConfig(data)
+    } catch { /* FAIL SILENTLY */ }
+  }, [])
 
   const fetchAnios = useCallback(async () => {
     try {
@@ -153,9 +164,10 @@ export default function PagosPage() {
   }, [dateRange, filterTipo, filterNombre, filterNie, filterGrado, filterSeccion, filterEncargado, filterTelefono, filterEstado, filterAnio, searchParams])
 
   useEffect(() => { 
+    fetchConfig()
     fetchAnios()
     fetchPagos() 
-  }, [fetchAnios, fetchPagos])
+  }, [fetchConfig, fetchAnios, fetchPagos])
 
   const clearFilters = () => {
     setDateRange(undefined)
@@ -194,10 +206,15 @@ export default function PagosPage() {
         const talRes = await fetch(`/api/talonarios?estudianteId=${data[0].id}&anio=all`)
         const talData = await talRes.json()
         setTalonarios(Array.isArray(talData) ? talData.sort((a,b) => b.anio - a.anio) : [])
+
+        const adminRes = await fetch(`/api/estudiantes/${data[0].id}/comprobantes`)
+        const adminData = await adminRes.json()
+        setAdminComprobantes(Array.isArray(adminData) ? adminData : [])
       } else {
         toast.error('Estudiante no encontrado con ese NIE')
         setEstudiante(null)
         setTalonarios([])
+        setAdminComprobantes([])
       }
     } catch {
       toast.error('Error buscando estudiante')
@@ -210,12 +227,14 @@ export default function PagosPage() {
       return
     }
 
-    if (selectedTipoPago === 'COLEGIATURA' && !selectedComprobante) {
-      toast.error('Para mensualidad debe seleccionar un comprobante')
+    const isColegiatura = selectedTipoPago === 'COLEGIATURA'
+    
+    if ((isColegiatura || esAdministrativoConRecibo) && !selectedComprobante) {
+      toast.error('Debe seleccionar el mes o recibo correspondiente')
       return
     }
 
-    if (selectedTipoPago !== 'COLEGIATURA' && (!montoManual || Number(montoManual) <= 0)) {
+    if (!isColegiatura && !esAdministrativoConRecibo && (!montoManual || Number(montoManual) <= 0)) {
       toast.error('Ingrese un monto válido')
       return
     }
@@ -233,8 +252,8 @@ export default function PagosPage() {
         body: JSON.stringify({
           estudianteId: estudiante.id,
           tipo: selectedTipoPago,
-          comprobanteId: selectedTipoPago === 'COLEGIATURA' ? selectedComprobante : undefined,
-          monto: selectedTipoPago === 'COLEGIATURA' ? undefined : Number(montoManual),
+          comprobanteId: selectedComprobante || undefined,
+          monto: selectedComprobante ? undefined : Number(montoManual),
           tipoPersonalizado: selectedTipoPago === 'OTRO' ? nuevoTipoPago.trim() : undefined,
           notas,
         }),
@@ -243,15 +262,13 @@ export default function PagosPage() {
       if (res.ok) {
         toast.success('Pago registrado exitosamente')
         setShowForm(false)
-        setNie(''); setEstudiante(null); setTalonarios([])
+        setNie(''); setEstudiante(null); setTalonarios([]); setAdminComprobantes([])
         setSelectedTalonario(''); setSelectedComprobante('')
         setSelectedTipoPago(''); setNuevoTipoPago(''); setSelectedTipoRapido(''); setMontoManual(''); setNotas('')
         fetchPagos()
       } else {
         toast.error(data.error || 'Error registrando pago')
       }
-    } catch {
-      toast.error('Error de conexión')
     } finally {
       setSavingPago(false)
     }
@@ -259,18 +276,23 @@ export default function PagosPage() {
 
   const talonarioActual = talonarios.find(t => t.id === selectedTalonario)
   const comprobantesDisponibles = talonarioActual?.comprobantes.filter(c => !c.pagado) || []
+  
   const esMensualidad = selectedTipoPago === 'COLEGIATURA'
   const esTipoOtro = selectedTipoPago === 'OTRO'
+  const esAdministrativoConRecibo = ['MATRICULA', 'PAPELERIA', 'ALIMENTACION'].includes(selectedTipoPago)
+  const comprobantesAdminFiltrados = adminComprobantes.filter(c => c.tipo === selectedTipoPago)
+
   const tiposPersonalizadosRecientes = Array.from(new Set(
     pagos
       .filter(p => p.tipo === 'OTRO' && p.tipoPersonalizado)
       .map(p => String(p.tipoPersonalizado).trim())
       .filter(Boolean)
   )).slice(0, 8)
+
   const puedeGuardarPago =
     !!estudiante &&
     !!selectedTipoPago &&
-    (esMensualidad ? !!selectedComprobante : !!montoManual && Number(montoManual) > 0) &&
+    (esMensualidad ? !!selectedComprobante : (esAdministrativoConRecibo ? !!selectedComprobante : !!montoManual && Number(montoManual) > 0)) &&
     (!esTipoOtro || !!nuevoTipoPago.trim())
 
   return (
@@ -305,11 +327,6 @@ export default function PagosPage() {
                 >
                   <Filter className="size-3.5" />
                   {showFilters ? 'Ocultar' : 'Filtros'}
-                  {hasActiveFilters && !dateRange?.from && !filterTipo && (
-                    <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[8px] uppercase">
-                      Activos
-                    </Badge>
-                  )}
                 </Button>
              </div>
              <div className="flex items-center gap-2">
@@ -327,7 +344,6 @@ export default function PagosPage() {
              </div>
           </CardHeader>
           
-          {/* Expanded Filters */}
           {showFilters && (
             <div className="p-3 border-b bg-muted/20">
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -335,94 +351,30 @@ export default function PagosPage() {
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Estudiante</label>
                   <div className="relative">
                     <Search className="absolute left-2.5 top-1/2 size-3 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Nombre..."
-                      value={filterNombre}
-                      onChange={e => setFilterNombre(e.target.value)}
-                      className="h-8 pl-7 text-xs"
-                    />
+                    <Input placeholder="Nombre..." value={filterNombre} onChange={e => setFilterNombre(e.target.value)} className="h-8 pl-7 text-xs" />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">NIE</label>
-                  <Input
-                    placeholder="NIE..."
-                    value={filterNie}
-                    onChange={e => setFilterNie(e.target.value)}
-                    className="h-8 text-xs font-mono"
-                  />
+                  <Input placeholder="NIE..." value={filterNie} onChange={e => setFilterNie(e.target.value)} className="h-8 text-xs font-mono" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Grado</label>
                   <Select value={filterGrado || 'all'} onValueChange={v => setFilterGrado(v === 'all' ? '' : v)}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Todos los grados" />
-                    </SelectTrigger>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todos los grados</SelectItem>
-                      {GRADOS.map(g => (
-                        <SelectItem key={g} value={g}>{g}</SelectItem>
-                      ))}
+                      <SelectItem value="all">Todos</SelectItem>
+                      {GRADOS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sección</label>
                   <Select value={filterSeccion || 'all'} onValueChange={v => setFilterSeccion(v === 'all' ? '' : v)}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Todas" />
-                    </SelectTrigger>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Todas" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas</SelectItem>
-                      {SECCIONES.map(s => (
-                        <SelectItem key={s} value={s}>Sección {s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Encargado</label>
-                  <Input
-                    placeholder="..."
-                    value={filterEncargado}
-                    onChange={e => setFilterEncargado(e.target.value)}
-                    className="h-8 text-xs"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Teléfono</label>
-                  <Input
-                    placeholder="..."
-                    value={filterTelefono}
-                    onChange={e => setFilterTelefono(e.target.value)}
-                    className="h-8 text-xs"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Estado Estudiante</label>
-                  <Select value={filterEstado || 'all'} onValueChange={v => setFilterEstado(v === 'all' ? '' : v)}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="AL_DIA">Al día</SelectItem>
-                      <SelectItem value="PENDIENTE">Pendiente</SelectItem>
-                      <SelectItem value="INCOMPLETO">Incompleto / Atrasado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Año Escolar</label>
-                  <Select value={filterAnio} onValueChange={setFilterAnio}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Seleccionar año" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos los años</SelectItem>
-                      {aniosDisponibles.map(y => (
-                        <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                      ))}
+                      {SECCIONES.map(s => <SelectItem key={s} value={s}>Sección {s}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -439,90 +391,73 @@ export default function PagosPage() {
             </CardHeader>
             <CardContent className="pt-5">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {/* NIE search */}
                 <div className="space-y-1.5">
                   <Label htmlFor="nie-pago">NIE del Estudiante</Label>
                   <div className="flex gap-2">
-                    <Input
-                      id="nie-pago"
-                      value={nie}
-                      onChange={e => setNie(e.target.value)}
-                      placeholder="Ej: 123456789"
-                      className="flex-1 font-mono"
-                      onKeyDown={e => e.key === 'Enter' && buscarEstudiante()}
-                    />
-                    <Button variant="secondary" type="button" onClick={buscarEstudiante}>
-                      Buscar
-                    </Button>
+                    <Input id="nie-pago" value={nie} onChange={e => setNie(e.target.value)} placeholder="NIE..." className="flex-1 font-mono" onKeyDown={e => e.key === 'Enter' && buscarEstudiante()} />
+                    <Button variant="secondary" type="button" onClick={buscarEstudiante}>Buscar</Button>
                   </div>
-                  {estudiante && (
-                    <p className="text-xs text-emerald-600 font-medium">✓ {estudiante.nombre}</p>
-                  )}
+                  {estudiante && <p className="text-xs text-emerald-600 font-medium">✓ {estudiante.nombre}</p>}
                 </div>
 
-                {/* Tipo de pago */}
                 <div className="space-y-1.5">
                   <Label htmlFor="tipo-pago-select">Tipo de Pago</Label>
-                  <Select
-                    value={selectedTipoPago || 'none'}
-                    onValueChange={v => {
-                      const next = v === 'none' ? '' : v
-                      setSelectedTipoPago(next)
-                      setSelectedTalonario('')
-                      setSelectedComprobante('')
-                      if (next === 'COLEGIATURA') {
-                        setMontoManual('')
-                        setNuevoTipoPago('')
+                  <Select value={selectedTipoPago || 'none'} onValueChange={v => {
+                    const next = v === 'none' ? '' : v
+                    setSelectedTipoPago(next)
+                    setSelectedTalonario('')
+                    setSelectedComprobante('')
+                    if (next === 'COLEGIATURA') {
+                      setMontoManual(''); setNuevoTipoPago('')
+                    } else if (['MATRICULA', 'PAPELERIA', 'ALIMENTACION'].includes(next)) {
+                      setNuevoTipoPago('')
+                      const admins = adminComprobantes.filter(c => c.tipo === next)
+                      if (next !== 'ALIMENTACION' && admins.length === 1) {
+                        setSelectedComprobante(admins[0].id)
+                        setMontoManual(String(admins[0].monto))
+                      } else {
+                        setMontoManual(String(config?.[`monto${next.charAt(0) + next.slice(1).toLowerCase()}`] || ''))
                       }
-                    }}
-                  >
-                    <SelectTrigger id="tipo-pago-select" className="w-full">
-                      <SelectValue placeholder="Seleccionar tipo" />
-                    </SelectTrigger>
+                    } else { setMontoManual('') }
+                  }}>
+                    <SelectTrigger id="tipo-pago-select" className="w-full"><SelectValue placeholder="Seleccionar tipo" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Seleccionar tipo</SelectItem>
-                      {Object.entries(TIPO_PAGO_OPTIONS).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>{label}</SelectItem>
-                      ))}
+                      {Object.entries(TIPO_PAGO_OPTIONS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  <p className="text-[11px] text-muted-foreground">
-                    Si selecciona mensualidad (colegiatura), debe elegir talonario y comprobante.
-                  </p>
                 </div>
 
-                {/* Talonario select */}
-                {esMensualidad && talonarios.length > 0 && (
+                {esMensualidad && (
                   <div className="space-y-1.5">
                     <Label htmlFor="talonario-select">Talonario</Label>
-                    <Select
-                      value={selectedTalonario}
-                      onValueChange={v => { setSelectedTalonario(v); setSelectedComprobante('') }}
-                    >
-                      <SelectTrigger id="talonario-select" className="w-full">
-                        <SelectValue placeholder="Seleccionar año" />
-                      </SelectTrigger>
+                    <Select value={selectedTalonario} onValueChange={v => { setSelectedTalonario(v); setSelectedComprobante('') }}>
+                      <SelectTrigger id="talonario-select" className="w-full"><SelectValue placeholder="Año" /></SelectTrigger>
                       <SelectContent>
-                        {talonarios.map(t => (
-                          <SelectItem key={t.id} value={t.id}>Talonario {t.anio}</SelectItem>
-                        ))}
+                        {talonarios.map(t => <SelectItem key={t.id} value={t.id}>Talonario {t.anio}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                 )}
 
-                {/* Comprobante select */}
-                {esMensualidad && comprobantesDisponibles.length > 0 && (
+                {(esMensualidad ? comprobantesDisponibles.length > 0 : (esAdministrativoConRecibo && comprobantesAdminFiltrados.length > 0)) && (
                   <div className="space-y-1.5">
-                    <Label htmlFor="comprobante-select">Comprobante</Label>
-                    <Select value={selectedComprobante} onValueChange={setSelectedComprobante}>
-                      <SelectTrigger id="comprobante-select" className="w-full">
-                        <SelectValue placeholder="Seleccionar comprobante" />
-                      </SelectTrigger>
+                    <Label>Seleccionar Mes / Recibo</Label>
+                    <Select value={selectedComprobante} onValueChange={v => {
+                      setSelectedComprobante(v)
+                      if (!esMensualidad) {
+                        const comp = adminComprobantes.find(c => c.id === v)
+                        if (comp) setMontoManual(String(comp.monto))
+                      }
+                    }}>
+                      <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                       <SelectContent>
-                        {comprobantesDisponibles.map(c => (
+                        {(esMensualidad ? comprobantesDisponibles : comprobantesAdminFiltrados).map(c => (
                           <SelectItem key={c.id} value={c.id}>
-                            {TIPO_PAGO_LABELS[c.tipo]}{c.mes ? ` - ${c.mes}` : ''} (${c.monto.toFixed(2)})
+                            {TIPO_PAGO_LABELS[c.tipo]}
+                            {c.mes ? ` - ${c.mes}` : ''}
+                            {c.talonario?.anio ? ` [${c.talonario.anio}]` : ''} 
+                            (${c.monto.toFixed(2)})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -530,221 +465,78 @@ export default function PagosPage() {
                   </div>
                 )}
 
-                {/* Selector rapido de tipo personalizado */}
-                {esTipoOtro && tiposPersonalizadosRecientes.length > 0 && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="tipo-rapido">Tipo Rápido</Label>
-                    <Select
-                      value={selectedTipoRapido || 'none'}
-                      onValueChange={v => {
-                        const next = v === 'none' ? '' : v
-                        setSelectedTipoRapido(next)
-                        if (next) setNuevoTipoPago(next)
-                      }}
-                    >
-                      <SelectTrigger id="tipo-rapido" className="w-full">
-                        <SelectValue placeholder="Seleccionar tipo usado recientemente" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Escribir uno nuevo</SelectItem>
-                        {tiposPersonalizadosRecientes.map(tipo => (
-                          <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {/* Tipo personalizado */}
                 {esTipoOtro && (
                   <div className="space-y-1.5">
-                    <Label htmlFor="tipo-personalizado">Nuevo Tipo de Pago</Label>
-                    <Input
-                      id="tipo-personalizado"
-                      value={nuevoTipoPago}
-                      onChange={e => setNuevoTipoPago(e.target.value)}
-                      placeholder="Ej: Camisa, Transporte, Evento..."
-                    />
+                    <Label htmlFor="tipo-personalizado">Nuevo Tipo</Label>
+                    <Input id="tipo-personalizado" value={nuevoTipoPago} onChange={e => setNuevoTipoPago(e.target.value)} placeholder="Ej: Camisa..." />
                   </div>
                 )}
 
-                {/* Monto manual */}
-                {!esMensualidad && selectedTipoPago && (
+                {!esMensualidad && !selectedComprobante && selectedTipoPago && (
                   <div className="space-y-1.5">
                     <Label htmlFor="monto-manual">Monto a Pagar</Label>
-                    <Input
-                      id="monto-manual"
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      value={montoManual}
-                      onChange={e => setMontoManual(e.target.value)}
-                      placeholder="0.00"
-                    />
+                    <Input id="monto-manual" type="number" step="0.01" value={montoManual} onChange={e => setMontoManual(e.target.value)} disabled={esAdministrativoConRecibo} />
                   </div>
                 )}
 
-                {/* Notes */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="notas-pago">Notas (opcional)</Label>
-                  <Input
-                    id="notas-pago"
-                    value={notas}
-                    onChange={e => setNotas(e.target.value)}
-                    placeholder="Observaciones..."
-                  />
+                <div className="space-y-1.5 lg:col-span-2">
+                  <Label htmlFor="notas-pago">Notas</Label>
+                  <Input id="notas-pago" value={notas} onChange={e => setNotas(e.target.value)} placeholder="Observaciones..." />
                 </div>
               </div>
             </CardContent>
             <CardFooter className="gap-3 border-t pt-4">
-              <Button onClick={handleRegistrarPago} disabled={savingPago || !puedeGuardarPago}>
-                {savingPago ? 'Guardando...' : 'Confirmar Pago'}
-              </Button>
+              <Button onClick={handleRegistrarPago} disabled={savingPago || !puedeGuardarPago}>{savingPago ? 'Guardando...' : 'Confirmar Pago'}</Button>
               <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
             </CardFooter>
           </Card>
         )}
 
-        {/* Payments table */}
+        {/* List */}
         <Card className="py-0">
           <CardHeader className="border-b px-6 py-4">
             <CardTitle className="text-base">Historial de Pagos</CardTitle>
           </CardHeader>
-
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/50 hover:bg-muted/50">
-                {['Estudiante', 'NIE', 'Tipo', 'Mes', 'Monto', 'Fecha', 'Notas', 'Acciones'].map(h => (
-                  <TableHead key={h} className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    {h}
-                  </TableHead>
-                ))}
+              <TableRow className="bg-muted/50">
+                {['Estudiante', 'NIE', 'Tipo', 'Mes', 'Monto', 'Fecha', 'Notas', 'Acciones'].map(h => <TableHead key={h} className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{h}</TableHead>)}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
-                [...Array(5)].map((_, i) => (
-                  <TableRow key={i}>
-                    {[...Array(8)].map((_, j) => (
-                      <TableCell key={j} className="px-3 py-2">
-                        <Skeleton className="h-3 w-full max-w-24" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : pagos.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="p-0">
-                    <Empty className="min-h-40 rounded-none border-0">
-                      <EmptyHeader>
-                        <EmptyMedia variant="icon"><CreditCard /></EmptyMedia>
-                        <EmptyTitle>No hay pagos</EmptyTitle>
-                        <EmptyDescription>No se encontraron pagos para los filtros seleccionados.</EmptyDescription>
-                      </EmptyHeader>
-                    </Empty>
+              {loading ? [...Array(5)].map((_, i) => (
+                <TableRow key={i}>{[...Array(8)].map((_, j) => <TableCell key={j} className="px-3 py-2"><Skeleton className="h-3 w-full" /></TableCell>)}</TableRow>
+              )) : pagos.length === 0 ? (
+                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">No se encontraron pagos.</TableCell></TableRow>
+              ) : paginatedPagos.map(p => (
+                <TableRow key={p.id}>
+                  <TableCell className="px-3 py-2 text-sm font-medium">{p.estudiante.nombre}</TableCell>
+                  <TableCell className="px-3 py-1 font-mono text-[11px] text-muted-foreground">{p.estudiante.nie}</TableCell>
+                  <TableCell className="px-3 py-1">
+                    <Badge className={cn('border text-[10px] px-1.5 py-0', typeBadgeClass[p.tipo] || '')}>{p.tipo === 'OTRO' ? p.tipoPersonalizado : TIPO_PAGO_LABELS[p.tipo]}</Badge>
+                  </TableCell>
+                  <TableCell className="px-3 py-1 text-xs">{p.comprobante?.mes || '—'}</TableCell>
+                  <TableCell className="px-3 py-1 text-sm font-semibold tabular-nums">{formatCurrency(p.monto)}</TableCell>
+                  <TableCell className="px-3 py-1 text-[11px] text-muted-foreground">{formatDate(p.fecha)}</TableCell>
+                  <TableCell className="px-3 py-1 text-[11px] text-muted-foreground truncate max-w-[150px]">{p.notas || '—'}</TableCell>
+                  <TableCell className="px-3 py-1">
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon-sm" asChild><Link href={`/pagos/${p.id}`}><Eye className="size-3.5" /></Link></Button>
+                      <Button variant="ghost" size="icon-sm" asChild><Link href={`/pagos/${p.id}/imprimir`}><Printer className="size-3.5" /></Link></Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ) : (
-                paginatedPagos.map(p => (
-                  <TableRow key={p.id}>
-                    <TableCell className="px-3 py-2 text-sm font-medium">{p.estudiante.nombre}</TableCell>
-                    <TableCell className="px-3 py-2 font-mono text-xs text-muted-foreground">{p.estudiante.nie}</TableCell>
-                    <TableCell className="px-3 py-2">
-                      <Badge className={cn('border text-xs', typeBadgeClass[p.tipo] || '')}>
-                        {p.tipo === 'OTRO' ? (p.tipoPersonalizado || 'Otro') : (TIPO_PAGO_LABELS[p.tipo] || p.tipo)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="px-3 py-2 text-xs text-muted-foreground">{p.comprobante?.mes || '—'}</TableCell>
-                    <TableCell className="px-3 py-2 text-sm font-semibold text-emerald-600 tabular-nums">{formatCurrency(p.monto)}</TableCell>
-                    <TableCell className="px-3 py-2 text-xs text-muted-foreground">{formatDate(p.fecha)}</TableCell>
-                    <TableCell className="px-3 py-2 text-xs text-muted-foreground">{p.notas || '—'}</TableCell>
-                    <TableCell className="px-3 py-2">
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon-sm" asChild>
-                          <Link href={`/pagos/${p.id}`}>
-                            <Eye className="size-4" />
-                          </Link>
-                        </Button>
-                        <Button variant="ghost" size="icon-sm" asChild>
-                          <Link href={`/pagos/${p.id}/imprimir`}>
-                            <Printer className="size-4" />
-                          </Link>
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+              ))}
             </TableBody>
           </Table>
         </Card>
 
-        {/* Pagination */}
-        {pagos.length > 0 && !loading && (
-          <Card className="py-0">
-            <CardFooter className="border-t flex flex-col gap-3 py-3 px-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-1">
-                <p className="text-[11px] text-muted-foreground">
-                  Mostrando {startIdx + 1} a {Math.min(endIdx, totalItems)} de {totalItems} pago{totalItems !== 1 ? 's' : ''}
-                </p>
-                <p className="text-sm font-semibold text-emerald-600 tabular-nums">
-                  Total: {formatCurrency(pagos.reduce((sum, p) => sum + p.monto, 0))}
-                </p>
-              </div>
-              
-              {totalPages > 1 && (
-                <div className="flex items-center gap-0.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="h-7 gap-0.5 px-1.5 text-xs"
-                  >
-                    ← <span className="hidden sm:inline">Anterior</span>
-                  </Button>
-                  
-                  <div className="flex items-center gap-0.5">
-                    {[...Array(totalPages)].map((_, idx) => {
-                      const page = idx + 1
-                      const isVisible = totalPages <= 7 || 
-                        page === 1 || 
-                        page === totalPages || 
-                        (page >= currentPage - 1 && page <= currentPage + 1)
-                      
-                      if (!isVisible && idx > 0 && (idx === 1 || idx === totalPages - 2)) {
-                        return <span key={`dots-${idx}`} className="px-0.5 text-muted-foreground text-[10px]">…</span>
-                      }
-                      
-                      if (!isVisible) return null
-                      
-                      return (
-                        <Button
-                          key={page}
-                          variant={currentPage === page ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handlePageChange(page)}
-                          className="h-7 w-6 p-0 text-xs"
-                        >
-                          {page}
-                        </Button>
-                      )
-                    })}
-                  </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="h-7 gap-0.5 px-1.5 text-xs"
-                  >
-                    <span className="hidden sm:inline">Siguiente</span> →
-                  </Button>
-                </div>
-              )}
-            </CardFooter>
-          </Card>
+        {totalPages > 1 && (
+          <div className="flex justify-center gap-2 mt-4">
+            <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>Anterior</Button>
+            <span className="flex items-center text-xs text-muted-foreground">Página {currentPage} de {totalPages}</span>
+            <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>Siguiente</Button>
+          </div>
         )}
       </div>
     </div>
