@@ -87,11 +87,9 @@ export default function PagosPage() {
   const [showForm, setShowForm] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  
-  // General filters
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
   const [filterTipo, setFilterTipo] = useState('')
-  
+
   // Student filters
   const [filterNombre, setFilterNombre] = useState('')
   const [filterNie, setFilterNie] = useState('')
@@ -151,11 +149,10 @@ export default function PagosPage() {
 
       const estudianteId = searchParams.get('estudianteId')
       if (estudianteId) params.set('estudianteId', estudianteId)
-      
+
       const res = await fetch(`/api/pagos?${params.toString()}`)
       const data = await res.json()
-      setPagos(Array.isArray(data) ? data : [])
-      setCurrentPage(1)
+      if (res.ok) setPagos(data)
     } catch {
       toast.error('Error cargando pagos')
     } finally {
@@ -163,10 +160,10 @@ export default function PagosPage() {
     }
   }, [dateRange, filterTipo, filterNombre, filterNie, filterGrado, filterSeccion, filterEncargado, filterTelefono, filterEstado, filterAnio, searchParams])
 
-  useEffect(() => { 
+  useEffect(() => {
     fetchConfig()
     fetchAnios()
-    fetchPagos() 
+    fetchPagos()
   }, [fetchConfig, fetchAnios, fetchPagos])
 
   const clearFilters = () => {
@@ -205,7 +202,7 @@ export default function PagosPage() {
         setEstudiante(data[0])
         const talRes = await fetch(`/api/talonarios?estudianteId=${data[0].id}&anio=all`)
         const talData = await talRes.json()
-        setTalonarios(Array.isArray(talData) ? talData.sort((a,b) => b.anio - a.anio) : [])
+        setTalonarios(Array.isArray(talData) ? talData.sort((a, b) => b.anio - a.anio) : [])
 
         const adminRes = await fetch(`/api/estudiantes/${data[0].id}/comprobantes`)
         const adminData = await adminRes.json()
@@ -227,14 +224,12 @@ export default function PagosPage() {
       return
     }
 
-    const isColegiatura = selectedTipoPago === 'COLEGIATURA'
-    
-    if ((isColegiatura || esAdministrativoConRecibo) && !selectedComprobante) {
+    if ((esMensualidad || esAdministrativoConRecibo) && !selectedComprobante) {
       toast.error('Debe seleccionar el mes o recibo correspondiente')
       return
     }
 
-    if (!isColegiatura && !esAdministrativoConRecibo && (!montoManual || Number(montoManual) <= 0)) {
+    if (!esMensualidad && !esAdministrativoConRecibo && (!montoManual || Number(montoManual) <= 0)) {
       toast.error('Ingrese un monto válido')
       return
     }
@@ -275,8 +270,8 @@ export default function PagosPage() {
   }
 
   const talonarioActual = talonarios.find(t => t.id === selectedTalonario)
-  const comprobantesDisponibles = talonarioActual?.comprobantes.filter(c => !c.pagado) || []
-  
+  const comprobantesDisponibles = talonarioActual?.comprobantes.filter(c => !c.pagado && c.tipo === 'COLEGIATURA') || []
+
   const esMensualidad = selectedTipoPago === 'COLEGIATURA'
   const esTipoOtro = selectedTipoPago === 'OTRO'
   const esAdministrativoConRecibo = ['MATRICULA', 'PAPELERIA', 'ALIMENTACION'].includes(selectedTipoPago)
@@ -292,8 +287,9 @@ export default function PagosPage() {
   const puedeGuardarPago =
     !!estudiante &&
     !!selectedTipoPago &&
-    (esMensualidad ? !!selectedComprobante : (esAdministrativoConRecibo ? !!selectedComprobante : !!montoManual && Number(montoManual) > 0)) &&
-    (!esTipoOtro || !!nuevoTipoPago.trim())
+    (esTipoOtro
+      ? (!!nuevoTipoPago.trim() && !!montoManual && Number(montoManual) > 0)
+      : !!selectedComprobante)
 
   return (
     <div className="flex flex-col h-full">
@@ -303,47 +299,47 @@ export default function PagosPage() {
         {/* Filter bar */}
         <Card className="py-0">
           <CardHeader className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-             <div className="flex items-center gap-2">
-                <DateRangePicker 
-                  value={dateRange} 
-                  onChange={setDateRange} 
-                />
-                <Select value={filterTipo || 'all'} onValueChange={v => setFilterTipo(v === 'all' ? '' : v)}>
-                  <SelectTrigger className="w-36 h-8 text-xs">
-                    <SelectValue placeholder="Todos los tipos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los tipos</SelectItem>
-                    {Object.entries(TIPO_PAGO_LABELS).map(([v, l]) => (
-                      <SelectItem key={v} value={v}>{l}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button 
-                  variant={showFilters ? "secondary" : "outline"} 
-                  size="sm" 
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="gap-1.5 h-8 text-xs"
-                >
-                  <Filter className="size-3.5" />
-                  {showFilters ? 'Ocultar' : 'Filtros'}
+            <div className="flex items-center gap-2">
+              <DateRangePicker
+                value={dateRange}
+                onChange={setDateRange}
+              />
+              <Select value={filterTipo || 'all'} onValueChange={v => setFilterTipo(v === 'all' ? '' : v)}>
+                <SelectTrigger className="w-36 h-8 text-xs">
+                  <SelectValue placeholder="Todos los tipos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los tipos</SelectItem>
+                  {Object.entries(TIPO_PAGO_LABELS).map(([v, l]) => (
+                    <SelectItem key={v} value={v}>{l}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant={showFilters ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className="gap-1.5 h-8 text-xs"
+              >
+                <Filter className="size-3.5" />
+                {showFilters ? 'Ocultar' : 'Filtros'}
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 gap-1.5 text-xs text-muted-foreground">
+                  <X className="size-3.5" />
+                  Limpiar
                 </Button>
-             </div>
-             <div className="flex items-center gap-2">
-                {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 gap-1.5 text-xs text-muted-foreground">
-                    <X className="size-3.5" />
-                    Limpiar
-                  </Button>
-                )}
-                {(rol === 'COLECTOR' || rol === 'ADMINISTRATIVO') && (
-                  <Button size="sm" onClick={() => setShowForm(!showForm)} className="h-8 text-xs gap-1.5">
-                    <Plus className="size-3.5" /> Registrar Pago
-                  </Button>
-                )}
-             </div>
+              )}
+              {(rol === 'COLECTOR' || rol === 'ADMINISTRATIVO') && (
+                <Button size="sm" onClick={() => setShowForm(!showForm)} className="h-8 text-xs gap-1.5">
+                  <Plus className="size-3.5" /> Registrar Pago
+                </Button>
+              )}
+            </div>
           </CardHeader>
-          
+
           {showFilters && (
             <div className="p-3 border-b bg-muted/20">
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -440,7 +436,7 @@ export default function PagosPage() {
                   </div>
                 )}
 
-                {(esMensualidad ? comprobantesDisponibles.length > 0 : (esAdministrativoConRecibo && comprobantesAdminFiltrados.length > 0)) && (
+                {((esMensualidad && !!selectedTalonario) || esAdministrativoConRecibo) && (
                   <div className="space-y-1.5">
                     <Label>Seleccionar Mes / Recibo</Label>
                     <Select value={selectedComprobante} onValueChange={v => {
@@ -456,7 +452,7 @@ export default function PagosPage() {
                           <SelectItem key={c.id} value={c.id}>
                             {TIPO_PAGO_LABELS[c.tipo]}
                             {c.mes ? ` - ${c.mes}` : ''}
-                            {c.talonario?.anio ? ` [${c.talonario.anio}]` : ''} 
+                            {c.talonario?.anio ? ` [${c.talonario.anio}]` : ''}
                             (${c.monto.toFixed(2)})
                           </SelectItem>
                         ))}
@@ -467,6 +463,19 @@ export default function PagosPage() {
 
                 {esTipoOtro && (
                   <>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="tipo-personalizado">Nombre del Pago</Label>
+                      <Input
+                        id="tipo-personalizado"
+                        value={nuevoTipoPago}
+                        onChange={e => {
+                          setNuevoTipoPago(e.target.value)
+                          setSelectedTipoRapido('manual')
+                        }}
+                        placeholder="Ej: Camisa, Excursión..."
+                        className="h-9"
+                      />
+                    </div>
                     {tiposPersonalizadosRecientes.length > 0 && (
                       <div className="space-y-1.5">
                         <Label>Sugerencias Recientes</Label>
@@ -484,26 +493,13 @@ export default function PagosPage() {
                         </Select>
                       </div>
                     )}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="tipo-personalizado">Nombre del Pago</Label>
-                      <Input
-                        id="tipo-personalizado"
-                        value={nuevoTipoPago}
-                        onChange={e => {
-                          setNuevoTipoPago(e.target.value)
-                          setSelectedTipoRapido('manual')
-                        }}
-                        placeholder="Ej: Camisa, Excursión..."
-                        className="h-9"
-                      />
-                    </div>
                   </>
                 )}
 
-                {!esMensualidad && !selectedComprobante && selectedTipoPago && (
+                {esTipoOtro && !selectedComprobante && (
                   <div className="space-y-1.5">
                     <Label htmlFor="monto-manual">Monto a Pagar</Label>
-                    <Input id="monto-manual" type="number" step="0.01" value={montoManual} onChange={e => setMontoManual(e.target.value)} disabled={esAdministrativoConRecibo} />
+                    <Input id="monto-manual" type="number" step="0.01" value={montoManual} onChange={e => setMontoManual(e.target.value)} />
                   </div>
                 )}
 

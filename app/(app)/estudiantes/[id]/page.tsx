@@ -34,6 +34,8 @@ export default function EstudianteDetailPage() {
   const rol = (session?.user as any)?.rol
   const [estudiante, setEstudiante] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10
 
   const [config, setConfig] = useState<any>(null)
 
@@ -135,35 +137,87 @@ export default function EstudianteDetailPage() {
               {!estudiante.comprobantes || estudiante.comprobantes.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-4">Sin otros pagos pendientes</p>
               ) : (
-                <div className="space-y-3">
-                  {estudiante.comprobantes.map((c: any) => {
-                    const hasMora = (c.tipo === 'MATRICULA' || c.tipo === 'COLEGIATURA') && config?.usarMora && config?.montoMora > 0
+                <div className="space-y-4">
+                  {(() => {
+                    const totalComprobantes = estudiante.comprobantes?.length || 0
+                    const totalPages = Math.ceil(totalComprobantes / ITEMS_PER_PAGE)
+                    const startIdx = (currentPage - 1) * ITEMS_PER_PAGE
+                    const paginatedList = (estudiante.comprobantes || []).slice(startIdx, startIdx + ITEMS_PER_PAGE)
+
+                    const groups: Record<string, any[]> = {}
+                    paginatedList.forEach((c: any) => {
+                      const y = String(c.talonario?.anio || 'Histórico')
+                      if (!groups[y]) groups[y] = []
+                      groups[y].push(c)
+                    })
+
+                    const sortedYears = Object.keys(groups).sort((a,b) => {
+                      if (a === 'Histórico') return 1
+                      if (b === 'Histórico') return -1
+                      return parseInt(b) - parseInt(a)
+                    })
+
                     return (
-                      <div key={c.id} className="flex items-center justify-between text-sm py-1 border-b last:border-0 border-dashed border-muted/50 pb-2">
-                        <div className="flex flex-col">
-                          <span className="font-medium">{TIPO_PAGO_LABELS[c.tipo] || c.tipo}{c.mes ? ` — ${c.mes}` : ''}</span>
-                          {c.pagado && c.fechaPago && <span className="text-[10px] text-muted-foreground">{formatDate(c.fechaPago)}</span>}
-                          {!c.pagado && hasMora && (
-                            <span className="text-[10px] text-amber-600 font-medium">+ {formatCurrency(config.montoMora)} de mora</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex flex-col items-end">
-                            <span className={cn('font-semibold', c.pagado ? 'text-emerald-600' : 'text-foreground')}>
-                              {formatCurrency(c.monto + (!c.pagado && hasMora ? config.montoMora : 0))}
-                            </span>
-                            {!c.pagado && hasMora && (
-                              <span className="text-[10px] text-muted-foreground line-through decoration-1">{formatCurrency(c.monto)}</span>
-                            )}
+                      <>
+                        {sortedYears.map(year => (
+                          <div key={year} className="space-y-2">
+                            <div className="flex items-center gap-2">
+                               <span className="text-[10px] font-bold uppercase tracking-wider text-primary whitespace-nowrap">Año {year}</span>
+                               <div className="h-px w-full bg-primary/10" />
+                            </div>
+                            <div className="space-y-1">
+                              {groups[year].map((c: any) => {
+                                const hasMora = (c.tipo === 'MATRICULA' || c.tipo === 'COLEGIATURA') && config?.usarMora && config?.montoMora > 0
+                                return (
+                                  <div key={c.id} className="flex items-center justify-between text-sm py-1.5 border-b last:border-0 border-dashed border-muted/40">
+                                    <div className="flex flex-col">
+                                      <span className="text-[13px] font-medium leading-tight">
+                                        {TIPO_PAGO_LABELS[c.tipo] || c.tipo}
+                                        {c.mes ? ` — ${c.mes}` : ''}
+                                      </span>
+                                      <div className="flex items-center gap-2 mt-0.5">
+                                        {c.pagado && c.fechaPago && <span className="text-[10px] text-muted-foreground">{formatDate(c.fechaPago)}</span>}
+                                        {!c.pagado && hasMora && (
+                                          <span className="text-[10px] text-amber-600 font-medium">+ {formatCurrency(config.montoMora)} mora</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="flex flex-col items-end">
+                                        <span className={cn('text-[13px] font-bold tabular-nums', c.pagado ? 'text-emerald-600' : 'text-foreground')}>
+                                          {formatCurrency(c.monto + (!c.pagado && hasMora ? config.montoMora : 0))}
+                                        </span>
+                                      </div>
+                                      {c.pagado 
+                                        ? <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[9px] h-4.5 px-1.5 py-0 shadow-none">Pagado</Badge>
+                                        : <Badge variant="secondary" className="text-[9px] h-4.5 px-1.5 py-0 shadow-none font-medium">Pdte</Badge>
+                                      }
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
                           </div>
-                          {c.pagado 
-                            ? <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800 text-[10px] px-1.5 py-0">Pagado</Badge>
-                            : <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Pendiente</Badge>
-                          }
-                        </div>
-                      </div>
+                        ))}
+                        
+                        {totalPages > 1 && (
+                          <div className="flex items-center justify-between pt-4 border-t border-dashed mt-2">
+                            <span className="text-[11px] text-muted-foreground font-medium">
+                              Pág. {currentPage} de {totalPages}
+                            </span>
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm" className="h-7 text-[10px] px-2.5" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                                Ant.
+                              </Button>
+                              <Button variant="outline" size="sm" className="h-7 text-[10px] px-2.5" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                                Sig.
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )
-                  })}
+                  })()}
                 </div>
               )}
             </CardContent>

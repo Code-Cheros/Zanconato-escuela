@@ -19,7 +19,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         orderBy: { anio: 'desc' },
       },
       comprobantes: {
-        where: { talonarioId: null },
+        where: { tipo: { not: 'COLEGIATURA' } },
+        include: { talonario: { select: { anio: true } } },
         orderBy: { orden: 'asc' },
       },
       pagos: { orderBy: { fecha: 'desc' } },

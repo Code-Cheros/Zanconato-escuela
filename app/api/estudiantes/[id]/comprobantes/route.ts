@@ -16,20 +16,24 @@ export async function GET(
   const anioFilter = searchParams.get('anio')
 
   try {
-    const comprobantes = await prisma.comprobante.findMany({
-      where: {
-        estudianteId: id,
-        tipo: { not: 'COLEGIATURA' },
-        pagado: false,
-        OR: [
-          { talonarioId: null },
-          {
-            talonario: {
-              anio: anioFilter ? parseInt(anioFilter) : undefined
-            }
+    const where: any = {
+      estudianteId: id,
+      tipo: { not: 'COLEGIATURA' },
+      pagado: false,
+    }
+
+    if (anioFilter) {
+      where.OR = [
+        { talonarioId: null },
+        {
+          talonario: {
+            anio: parseInt(anioFilter),
           }
-        ]
-      },
+        }
+      ]
+    }
+    const comprobantes = await prisma.comprobante.findMany({
+      where,
       include: {
         talonario: {
           select: { anio: true }

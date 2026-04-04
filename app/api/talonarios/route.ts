@@ -61,8 +61,9 @@ export async function POST(req: NextRequest) {
       anio, 
       montoMatricula, 
       montoColegiatura, 
-      montoAlimentacion, 
-      incluirAlimentacion,
+      montoAlimentacion,
+      montoPapeleria, 
+      incluirAlimentacion = true, 
       grado,
       seccion 
     } = body
@@ -146,7 +147,7 @@ export async function POST(req: NextRequest) {
         // Papelería anual
         {
           tipo: 'PAPELERIA',
-          monto: config.montoPapeleria, // Usamos config si no viene en body
+          monto: montoPapeleria || config.montoPapeleria,
           mes: null,
           orden: 0,
         },
