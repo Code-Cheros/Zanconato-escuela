@@ -466,10 +466,38 @@ export default function PagosPage() {
                 )}
 
                 {esTipoOtro && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="tipo-personalizado">Nuevo Tipo</Label>
-                    <Input id="tipo-personalizado" value={nuevoTipoPago} onChange={e => setNuevoTipoPago(e.target.value)} placeholder="Ej: Camisa..." />
-                  </div>
+                  <>
+                    {tiposPersonalizadosRecientes.length > 0 && (
+                      <div className="space-y-1.5">
+                        <Label>Sugerencias Recientes</Label>
+                        <Select value={selectedTipoRapido} onValueChange={v => {
+                          setSelectedTipoRapido(v)
+                          if (v !== 'manual') setNuevoTipoPago(v)
+                        }}>
+                          <SelectTrigger className="h-9"><SelectValue placeholder="Tipos anteriores..." /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="manual">-- Escribir nuevo --</SelectItem>
+                            {tiposPersonalizadosRecientes.map(t => (
+                              <SelectItem key={t} value={t}>{t}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="tipo-personalizado">Nombre del Pago</Label>
+                      <Input
+                        id="tipo-personalizado"
+                        value={nuevoTipoPago}
+                        onChange={e => {
+                          setNuevoTipoPago(e.target.value)
+                          setSelectedTipoRapido('manual')
+                        }}
+                        placeholder="Ej: Camisa, Excursión..."
+                        className="h-9"
+                      />
+                    </div>
+                  </>
                 )}
 
                 {!esMensualidad && !selectedComprobante && selectedTipoPago && (
