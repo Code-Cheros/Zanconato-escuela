@@ -100,6 +100,7 @@ export default function PagosPage() {
   const [filterTelefono, setFilterTelefono] = useState('')
   const [filterEstado, setFilterEstado] = useState('')
   const [filterAnio, setFilterAnio] = useState(String(new Date().getFullYear()))
+  const [aniosDisponibles, setAniosDisponibles] = useState<number[]>([new Date().getFullYear()])
 
   const [nie, setNie] = useState('')
   const [estudiante, setEstudiante] = useState<any>(null)
@@ -112,6 +113,14 @@ export default function PagosPage() {
   const [montoManual, setMontoManual] = useState('')
   const [notas, setNotas] = useState('')
   const [savingPago, setSavingPago] = useState(false)
+
+  const fetchAnios = useCallback(async () => {
+    try {
+      const res = await fetch('/api/talonarios/anios')
+      const data = await res.json()
+      if (Array.isArray(data)) setAniosDisponibles(data)
+    } catch { /* Usar default */ }
+  }, [])
 
   const fetchPagos = useCallback(async () => {
     setLoading(true)
@@ -143,7 +152,10 @@ export default function PagosPage() {
     }
   }, [dateRange, filterTipo, filterNombre, filterNie, filterGrado, filterSeccion, filterEncargado, filterTelefono, filterEstado, filterAnio, searchParams])
 
-  useEffect(() => { fetchPagos() }, [fetchPagos])
+  useEffect(() => { 
+    fetchAnios()
+    fetchPagos() 
+  }, [fetchAnios, fetchPagos])
 
   const clearFilters = () => {
     setDateRange(undefined)
@@ -179,9 +191,9 @@ export default function PagosPage() {
       const data = await res.json()
       if (data.length > 0) {
         setEstudiante(data[0])
-        const talRes = await fetch(`/api/talonarios?estudianteId=${data[0].id}`)
+        const talRes = await fetch(`/api/talonarios?estudianteId=${data[0].id}&anio=all`)
         const talData = await talRes.json()
-        setTalonarios(Array.isArray(talData) ? talData : [])
+        setTalonarios(Array.isArray(talData) ? talData.sort((a,b) => b.anio - a.anio) : [])
       } else {
         toast.error('Estudiante no encontrado con ese NIE')
         setEstudiante(null)
@@ -407,7 +419,8 @@ export default function PagosPage() {
                       <SelectValue placeholder="Seleccionar año" />
                     </SelectTrigger>
                     <SelectContent>
-                      {[2024, 2025, 2026, 2027, 2028].map(y => (
+                      <SelectItem value="all">Todos los años</SelectItem>
+                      {aniosDisponibles.map(y => (
                         <SelectItem key={y} value={String(y)}>{y}</SelectItem>
                       ))}
                     </SelectContent>
