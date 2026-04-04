@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import { Plus, X, CreditCard, Filter, Search, Eye, Printer } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { formatCurrency, formatDate, TIPO_PAGO_LABELS, GRADOS, SECCIONES } from '@/lib/utils'
+import { formatCurrency, formatDate, TIPO_PAGO_LABELS, MESES, GRADOS, SECCIONES } from '@/lib/utils'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -443,19 +443,43 @@ export default function PagosPage() {
                       setSelectedComprobante(v)
                       if (!esMensualidad) {
                         const comp = adminComprobantes.find(c => c.id === v)
-                        if (comp) setMontoManual(String(comp.monto))
+                        if (comp) setMontoManual(String(comp.monto)) // This is a bit redundant if it has mora
                       }
                     }}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Seleccionar..." />
+                      </SelectTrigger>
                       <SelectContent>
-                        {(esMensualidad ? comprobantesDisponibles : comprobantesAdminFiltrados).map(c => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {TIPO_PAGO_LABELS[c.tipo]}
-                            {c.mes ? ` - ${c.mes}` : ''}
-                            {c.talonario?.anio ? ` [${c.talonario.anio}]` : ''}
-                            (${c.monto.toFixed(2)})
-                          </SelectItem>
-                        ))}
+                        {(esMensualidad ? comprobantesDisponibles : comprobantesAdminFiltrados).map((c) => {
+                          const now = new Date()
+                          const currM = now.getMonth()
+                          const currY = now.getFullYear()
+
+                          const isVencido = () => {
+                            const anio = c.talonario?.anio || currY
+                            if (anio < currY) return true
+                            if (anio > currY) return false
+                            if (!c.mes) return false
+                            const mIdx = MESES.findIndex(m => m.toUpperCase() === String(c.mes).toUpperCase())
+                            if (mIdx === -1) return false
+                            return mIdx < currM
+                          }
+
+                          const hasMora = (c.tipo === 'MATRICULA' || c.tipo === 'COLEGIATURA') && 
+                                         config?.usarMora && (config?.montoMora || 0) > 0 && isVencido()
+                          
+                          const total = c.monto + (hasMora ? (config?.montoMora || 0) : 0)
+
+                          return (
+                            <SelectItem key={c.id} value={c.id}>
+                              {TIPO_PAGO_LABELS[c.tipo]}
+                              {c.mes ? ` — ${c.mes}` : ''}
+                              {c.talonario?.anio ? ` [${c.talonario.anio}]` : ''} 
+                              {hasMora && <span className="ml-1 text-amber-600">(+Mora)</span>}
+                              {" — "} {formatCurrency(total)}
+                            </SelectItem>
+                          )
+                        })}
                       </SelectContent>
                     </Select>
                   </div>

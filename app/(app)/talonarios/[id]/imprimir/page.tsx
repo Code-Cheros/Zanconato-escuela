@@ -140,7 +140,28 @@ function SlipCopy({
   }).format(new Date())
   const cuota = formatMoney(comp.monto)
   const showMoraForThisType = comp.tipo === 'MATRICULA' || comp.tipo === 'COLEGIATURA'
-  const finalMostrarMora = mostrarMora && showMoraForThisType
+  
+  const isVencido = () => {
+    const now = new Date()
+    const currMonth = now.getMonth()
+    const currYear = now.getFullYear()
+    
+    if (anio < currYear) return true
+    if (anio > currYear) return false
+    if (!comp.mes) return false
+    
+    // MESES is not explicitly imported here as names, but we can assume it's available if we import it
+    const MESES_NAMES = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ]
+    
+    const mIdx = MESES_NAMES.findIndex(m => m.toUpperCase() === String(comp.mes).toUpperCase())
+    if (mIdx === -1) return false
+    return mIdx < currMonth
+  }
+
+  const finalMostrarMora = mostrarMora && showMoraForThisType && isVencido()
   const mora = formatMoneyCompact(comp.monto + montoMora)
   const nombre = normalizeText(estudiante.nombre)
   const grado = estudiante.grado || '9'

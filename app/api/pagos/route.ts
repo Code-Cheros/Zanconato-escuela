@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { MESES } from '@/lib/utils'
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -141,12 +142,37 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Este comprobante ya fue pagado' }, { status: 409 })
       }
 
+      const config = await prisma.configuracionSistema.findUnique({ where: { id: 'global' } })
+      
+      const now = new Date()
+      const currMonth = now.getMonth()
+      const currYear = now.getFullYear()
+
+      const isVencido = (c: any) => {
+        const anio = c.talonario?.anio || currYear
+        if (anio < currYear) return true
+        if (anio > currYear) return false
+        
+        if (!c.mes) return false
+        
+        const mIdx = MESES.findIndex(m => m.toUpperCase() === String(c.mes).toUpperCase())
+        if (mIdx === -1) return false
+        
+        return mIdx < currMonth
+      }
+
+      const hasMora = (comprobante.tipo === 'MATRICULA' || comprobante.tipo === 'COLEGIATURA') && 
+                     config?.usarMora && (config?.montoMora || 0) > 0 && 
+                     isVencido(comprobante)
+      
+      const montoFinal = comprobante.monto + (hasMora ? (config?.montoMora || 0) : 0)
+
       const pago = await prisma.$transaction(async (tx: any) => {
         const p = await tx.pago.create({
           data: {
             estudianteId,
             comprobanteId,
-            monto: comprobante.monto,
+            monto: montoFinal,
             tipo: comprobante.tipo,
             registradoPor: (session.user as any).id,
             notas,
