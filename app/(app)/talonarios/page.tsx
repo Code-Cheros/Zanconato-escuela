@@ -62,8 +62,21 @@ export default function TalonariosPage() {
   const [filterNombre, setFilterNombre] = useState('')
   const [filterNie, setFilterNie] = useState('')
   const [filterGrado, setFilterGrado] = useState('')
+  const [aniosDisponibles, setAniosDisponibles] = useState<number[]>([new Date().getFullYear()])
 
   const estudianteId = searchParams.get('estudianteId')
+
+  const fetchAnios = useCallback(async () => {
+    try {
+      const res = await fetch('/api/talonarios/anios')
+      const data = await res.json()
+      if (Array.isArray(data)) {
+        setAniosDisponibles(data)
+      }
+    } catch {
+      // Usar año actual por defecto en caso de error
+    }
+  }, [])
 
   const fetchTalonarios = useCallback(async () => {
     setLoading(true)
@@ -86,7 +99,10 @@ export default function TalonariosPage() {
     }
   }, [estudianteId, filterAnio, filterNombre, filterNie, filterGrado])
 
-  useEffect(() => { fetchTalonarios() }, [fetchTalonarios])
+  useEffect(() => { 
+    fetchAnios()
+    fetchTalonarios() 
+  }, [fetchAnios, fetchTalonarios])
 
   const clearFilters = () => {
     setFilterAnio(String(new Date().getFullYear()))
@@ -184,10 +200,9 @@ export default function TalonariosPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los años</SelectItem>
-                {[ -1, 0, 1, 2].map(offset => {
-                  const y = new Date().getFullYear() + offset
-                  return <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                })}
+                {aniosDisponibles.map(y => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground font-medium">
