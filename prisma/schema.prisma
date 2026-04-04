@@ -16,6 +16,8 @@ model Usuario {
   rol        Rol        @default(COLECTOR)
   activo     Boolean    @default(true)
   creadoEn   DateTime   @default(now())
+  pagosRegistrados Pago[] @relation("PagoRegistradoPorUsuario")
+  cambiosConfiguracion HistorialConfiguracion[] @relation("HistorialConfiguracionUsuario")
 }
 
 enum Rol {
@@ -48,6 +50,8 @@ model Talonario {
   seccion      String?
   comprobantes Comprobante[]
   creadoEn     DateTime      @default(now())
+
+  @@unique([estudianteId, anio])
 }
 
 
@@ -75,9 +79,16 @@ model Pago {
   monto         Float
   tipo          TipoPago
   tipoPersonalizado String?
+  cantidad      Int?
   fecha         DateTime    @default(now())
   registradoPor String
+  registrador   Usuario     @relation("PagoRegistradoPorUsuario", fields: [registradoPor], references: [id], onDelete: Restrict, onUpdate: Cascade)
   notas         String?
+
+  @@index([fecha])
+  @@index([tipo])
+  @@index([estudianteId])
+  @@index([registradoPor])
 }
 
 enum TipoPago {
@@ -112,6 +123,7 @@ model ConfiguracionSistema {
 model HistorialConfiguracion {
   id             String   @id @default(cuid())
   usuarioId      String
+  usuario        Usuario  @relation("HistorialConfiguracionUsuario", fields: [usuarioId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   nombreUsuario  String
   fecha          DateTime @default(now())
   campo          String   // e.g., 'montoMatricula', 'montoPapeleria', etc.

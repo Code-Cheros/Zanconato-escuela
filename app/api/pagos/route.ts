@@ -115,6 +115,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
+    const sessionUser = session.user as any
     const {
       estudianteId,
       comprobanteId,
@@ -122,10 +123,46 @@ export async function POST(req: NextRequest) {
       tipo,
       monto,
       tipoPersonalizado,
+      cantidad,
     } = body
 
     if (!estudianteId || !tipo) {
       return NextResponse.json({ error: 'Datos requeridos faltantes' }, { status: 400 })
+    }
+
+    // Resolve a valid registrador id to satisfy FK constraints even with stale session tokens.
+    const resolveRegistradorId = async (): Promise<string | null> => {
+      const sessionUserId = String(sessionUser?.id || '').trim()
+      const sessionEmail = String(sessionUser?.email || '').trim()
+
+      if (sessionUserId) {
+        const existsById = await prisma.usuario.findUnique({
+          where: { id: sessionUserId },
+          select: { id: true },
+        })
+        if (existsById) return existsById.id
+      }
+
+      if (sessionEmail) {
+        const existsByEmail = await prisma.usuario.findUnique({
+          where: { email: sessionEmail },
+          select: { id: true },
+        })
+        if (existsByEmail) return existsByEmail.id
+      }
+
+      const fallbackUser = await prisma.usuario.findFirst({
+        where: { activo: true },
+        orderBy: { creadoEn: 'asc' },
+        select: { id: true },
+      })
+
+      return fallbackUser?.id ?? null
+    }
+
+    const registradorId = await resolveRegistradorId()
+    if (!registradorId) {
+      return NextResponse.json({ error: 'No se encontró un usuario válido para registrar el pago' }, { status: 500 })
     }
 
     // Si se proporciona comprobanteId, realizamos la vinculación y marcamos como pagado.
@@ -174,7 +211,7 @@ export async function POST(req: NextRequest) {
             comprobanteId,
             monto: montoFinal,
             tipo: comprobante.tipo,
-            registradoPor: (session.user as any).id,
+            registradoPor: registradorId,
             notas,
           },
         })
@@ -199,13 +236,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Debe indicar el nombre del nuevo tipo de pago' }, { status: 400 })
     }
 
+    const cantidadFinal = tipo === 'OTRO'
+      ? Math.trunc(Number(cantidad ?? 1))
+      : null
+
+    if (tipo === 'OTRO' && (!Number.isFinite(cantidadFinal) || cantidadFinal <= 0)) {
+      return NextResponse.json({ error: 'Debe indicar una cantidad válida' }, { status: 400 })
+    }
+
     const pago = await prisma.pago.create({
       data: {
         estudianteId,
         monto: Number(monto),
         tipo,
         tipoPersonalizado: tipo === 'OTRO' ? String(tipoPersonalizado).trim() : null,
-        registradoPor: (session.user as any).id,
+        cantidad: tipo === 'OTRO' ? cantidadFinal : null,
+        registradoPor: registradorId,
         notas,
       } as any,
     })

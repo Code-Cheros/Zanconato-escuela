@@ -1,0 +1,36 @@
+model Pago {
+  id                String       @id @default(cuid())
+  estudianteId      String
+  estudiante        Estudiante   @relation(fields: [estudianteId], references: [id])
+  comprobanteId     String?      @unique
+  comprobante       Comprobante? @relation(fields: [comprobanteId], references: [id])
+  monto             Float
+  tipo              TipoPago
+  tipoPersonalizado String?
+  cantidad          Int?
+  fecha             DateTime     @default(now())
+  registradoPor     String
+  notas             String?
+
+  @@index([fecha])
+  @@index([tipo])
+  @@index([estudianteId])
+  @@index([registradoPor])
+}
+
+model Talonario {
+  id           String       @id @default(cuid())
+  estudianteId String
+  estudiante   Estudiante   @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  anio         Int
+  grado        String?
+  seccion      String?
+  comprobantes Comprobante[]
+  creadoEn     DateTime     @default(now())
+
+  @@unique([estudianteId, anio])
+}
+
+-- Relaciones por FK para aplicar en fase posterior:
+-- Pago.registradoPor -> Usuario.id
+-- HistorialConfiguracion.usuarioId -> Usuario.id

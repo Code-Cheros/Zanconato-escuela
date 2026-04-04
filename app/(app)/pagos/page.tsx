@@ -110,6 +110,7 @@ export default function PagosPage() {
   const [selectedComprobante, setSelectedComprobante] = useState('')
   const [selectedTipoPago, setSelectedTipoPago] = useState('')
   const [nuevoTipoPago, setNuevoTipoPago] = useState('')
+  const [cantidadOtro, setCantidadOtro] = useState('1')
   const [selectedTipoRapido, setSelectedTipoRapido] = useState('')
   const [montoManual, setMontoManual] = useState('')
   const [notas, setNotas] = useState('')
@@ -239,8 +240,18 @@ export default function PagosPage() {
       return
     }
 
+    if (selectedTipoPago === 'OTRO' && (!cantidadOtro || Number(cantidadOtro) <= 0)) {
+      toast.error('Ingrese una cantidad válida')
+      return
+    }
+
     setSavingPago(true)
     try {
+      const notasBase = notas.trim()
+      const cantidadPayload = selectedTipoPago === 'OTRO'
+        ? Math.trunc(Number(cantidadOtro))
+        : undefined
+
       const res = await fetch('/api/pagos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -250,7 +261,8 @@ export default function PagosPage() {
           comprobanteId: selectedComprobante || undefined,
           monto: selectedComprobante ? undefined : Number(montoManual),
           tipoPersonalizado: selectedTipoPago === 'OTRO' ? nuevoTipoPago.trim() : undefined,
-          notas,
+          cantidad: cantidadPayload,
+          notas: notasBase,
         }),
       })
       const data = await res.json()
@@ -259,7 +271,7 @@ export default function PagosPage() {
         setShowForm(false)
         setNie(''); setEstudiante(null); setTalonarios([]); setAdminComprobantes([])
         setSelectedTalonario(''); setSelectedComprobante('')
-        setSelectedTipoPago(''); setNuevoTipoPago(''); setSelectedTipoRapido(''); setMontoManual(''); setNotas('')
+        setSelectedTipoPago(''); setNuevoTipoPago(''); setCantidadOtro('1'); setSelectedTipoRapido(''); setMontoManual(''); setNotas('')
         fetchPagos()
       } else {
         toast.error(data.error || 'Error registrando pago')
@@ -288,7 +300,7 @@ export default function PagosPage() {
     !!estudiante &&
     !!selectedTipoPago &&
     (esTipoOtro
-      ? (!!nuevoTipoPago.trim() && !!montoManual && Number(montoManual) > 0)
+      ? (!!nuevoTipoPago.trim() && !!cantidadOtro && Number(cantidadOtro) > 0 && !!montoManual && Number(montoManual) > 0)
       : !!selectedComprobante)
 
   return (
@@ -403,6 +415,7 @@ export default function PagosPage() {
                     setSelectedTipoPago(next)
                     setSelectedTalonario('')
                     setSelectedComprobante('')
+                    setCantidadOtro('1')
                     if (next === 'COLEGIATURA') {
                       setMontoManual(''); setNuevoTipoPago('')
                     } else if (['MATRICULA', 'PAPELERIA', 'ALIMENTACION'].includes(next)) {
@@ -518,6 +531,20 @@ export default function PagosPage() {
                       </div>
                     )}
                   </>
+                )}
+
+                {esTipoOtro && !selectedComprobante && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cantidad-otro">Cantidad</Label>
+                    <Input
+                      id="cantidad-otro"
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={cantidadOtro}
+                      onChange={e => setCantidadOtro(e.target.value)}
+                    />
+                  </div>
                 )}
 
                 {esTipoOtro && !selectedComprobante && (
