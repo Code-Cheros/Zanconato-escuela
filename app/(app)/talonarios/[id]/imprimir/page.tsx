@@ -139,6 +139,8 @@ function SlipCopy({
     year: 'numeric',
   }).format(new Date())
   const cuota = formatMoney(comp.monto)
+  const showMoraForThisType = comp.tipo === 'MATRICULA' || comp.tipo === 'COLEGIATURA'
+  const finalMostrarMora = mostrarMora && showMoraForThisType
   const mora = formatMoneyCompact(comp.monto + montoMora)
   const nombre = normalizeText(estudiante.nombre)
   const grado = estudiante.grado || '9'
@@ -192,7 +194,7 @@ function SlipCopy({
               <div className="mb-0.5 text-[10px] font-semibold text-[#2f5268]">
                 <span className="font-bold">Última fecha de pago</span> {fecha}
               </div>
-              {mostrarMora ? (
+              {finalMostrarMora ? (
                 <div className="text-[10px] font-semibold text-[#2f5268]">
                   <span className="font-bold">Monto con mora:</span> {mora}
                 </div>

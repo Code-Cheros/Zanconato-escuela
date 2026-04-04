@@ -129,26 +129,18 @@ export async function POST(req: NextRequest) {
 
 
       const comprobantes = [
-        { tipo: 'MATRICULA', monto: montoMatricula || config.montoMatricula, mes: null, orden: 1 },
         ...MESES.map((mes, i) => ({
           tipo: 'COLEGIATURA',
           monto: montoColegiatura || config.montoMensualidad,
           mes,
-          orden: 2 + i,
+          orden: 1 + i,
         })),
-        ...(incluirAlimentacion !== false
-          ? MESES.map((mes, i) => ({
-              tipo: 'ALIMENTACION',
-              monto: montoAlimentacion || config.montoAlimentacion || 10.00,
-              mes,
-              orden: 12 + i,
-            }))
-          : []),
       ]
 
       await tx.comprobante.createMany({
         data: comprobantes.map((c) => ({
           talonarioId: t.id,
+          estudianteId: estudianteId,
           tipo: c.tipo as any,
           monto: c.monto,
           mes: c.mes || null,

@@ -40,6 +40,7 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json()
+    const currentUser = session.user as any
 
     const logoUrl = typeof body.logoUrl === 'string' ? body.logoUrl.trim() : ''
     const montoMatricula = Number(body.montoMatricula)
@@ -67,6 +68,8 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Monto de mora inválido' }, { status: 400 })
     }
 
+    const oldConfig = await getOrCreateConfig()
+
     const config = await prismaCompat.configuracionSistema.upsert({
       where: { id: 'global' },
       update: {
@@ -89,6 +92,32 @@ export async function PUT(req: NextRequest) {
         usarMora,
       },
     })
+
+    // Registrar cambios en el historial
+    const fieldsToTrack = [
+      { key: 'montoMatricula', label: 'Matrícula' },
+      { key: 'montoPapeleria', label: 'Papelería' },
+      { key: 'montoMensualidad', label: 'Mensualidad' },
+      { key: 'montoAlimentacion', label: 'Alimentación' },
+      { key: 'montoMora', label: 'Mora' },
+      { key: 'usarMora', label: 'Usar Mora' },
+    ]
+
+    const changes = fieldsToTrack
+      .filter((f) => oldConfig[f.key] !== config[f.key])
+      .map((f) => ({
+        usuarioId: currentUser.id || 'unknown',
+        nombreUsuario: currentUser.nombre || currentUser.email || 'Sistema',
+        campo: f.label,
+        valorAnterior: String(oldConfig[f.key] ?? ''),
+        valorNuevo: String(config[f.key] ?? ''),
+      }))
+
+    if (changes.length > 0) {
+      await (prisma as any).historialConfiguracion.createMany({
+        data: changes,
+      })
+    }
 
     return NextResponse.json(config)
   } catch (error: any) {

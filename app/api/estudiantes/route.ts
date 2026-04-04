@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      // Crear talonario automático
+      // Talonario solo para COLEGIATURA
       const talonario = await tx.talonario.create({
         data: {
           estudianteId: estudiante.id,
@@ -158,26 +158,52 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      // Comprobantes en orden fijo
-      const comprobantes = [
-        { tipo: 'MATRICULA', monto: config.montoMatricula, mes: null, orden: 1 },
+      // Comprobantes de COLEGIATURA (en el talonario)
+      const colegiaturas = MESES.map((mes, i) => ({
+        talonarioId: talonario.id,
+        estudianteId: estudiante.id,
+        tipo: 'COLEGIATURA',
+        monto: config.montoMensualidad,
+        mes,
+        orden: 1 + i,
+        pagado: false,
+      }))
+
+      // Otros comprobantes (independientes del talonario)
+      const otrosPagos = [
+        {
+          talonarioId: null,
+          estudianteId: estudiante.id,
+          tipo: 'MATRICULA',
+          monto: config.montoMatricula,
+          mes: null,
+          orden: 0,
+          pagado: false,
+        },
+        {
+          talonarioId: null,
+          estudianteId: estudiante.id,
+          tipo: 'PAPELERIA',
+          monto: config.montoPapeleria,
+          mes: null,
+          orden: 0,
+          pagado: false,
+        },
         ...MESES.map((mes, i) => ({
-          tipo: 'COLEGIATURA',
-          monto: config.montoMensualidad,
-          mes,
-          orden: 2 + i,
-        })),
-        ...MESES.map((mes, i) => ({
+          talonarioId: null,
+          estudianteId: estudiante.id,
           tipo: 'ALIMENTACION',
           monto: config.montoAlimentacion,
           mes,
-          orden: 12 + i,
+          orden: i,
+          pagado: false,
         })),
       ]
 
       await tx.comprobante.createMany({
-        data: comprobantes.map((c) => ({
-          talonarioId: talonario.id,
+        data: [...colegiaturas, ...otrosPagos].map((c) => ({
+          talonarioId: c.talonarioId,
+          estudianteId: c.estudianteId,
           tipo: c.tipo as any,
           monto: c.monto,
           mes: c.mes,

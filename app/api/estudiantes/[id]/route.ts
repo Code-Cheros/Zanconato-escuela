@@ -18,6 +18,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         },
         orderBy: { anio: 'desc' },
       },
+      comprobantes: {
+        where: { talonarioId: null },
+        orderBy: { orden: 'asc' },
+      },
       pagos: { orderBy: { fecha: 'desc' } },
     },
   })

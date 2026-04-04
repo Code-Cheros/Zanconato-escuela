@@ -6,7 +6,7 @@ import Header from '@/components/layout/Header'
 import { ArrowLeft, Edit, BookOpen, CreditCard, User } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { formatCurrency, formatDate, TIPO_PAGO_LABELS } from '@/lib/utils'
+import { formatCurrency, formatDate, TIPO_PAGO_LABELS, cn } from '@/lib/utils'
 import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,11 +35,22 @@ export default function EstudianteDetailPage() {
   const [estudiante, setEstudiante] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
+  const [config, setConfig] = useState<any>(null)
+
   useEffect(() => {
-    fetch(`/api/estudiantes/${id}`)
-      .then(r => r.json())
-      .then(d => { setEstudiante(d); setLoading(false) })
-      .catch(() => { toast.error('Error cargando estudiante'); setLoading(false) })
+    Promise.all([
+      fetch(`/api/estudiantes/${id}`).then(r => r.json()),
+      fetch('/api/configuracion').then(r => r.json()).catch(() => null)
+    ])
+      .then(([est, conf]) => {
+        setEstudiante(est)
+        setConfig(conf)
+        setLoading(false)
+      })
+      .catch(() => {
+        toast.error('Error cargando datos')
+        setLoading(false)
+      })
   }, [id])
 
   if (loading) return (
@@ -113,11 +124,56 @@ export default function EstudianteDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Talonarios */}
-          <Card className="lg:col-span-2 py-0">
+          {/* Pagos Administrativos y Extras */}
+          <Card className="lg:col-span-1 py-0">
             <CardHeader className="flex flex-row items-center justify-between border-b px-6 py-4">
               <CardTitle className="flex items-center gap-2 text-sm">
-                <BookOpen className="size-4 text-primary" /> Talonarios
+                <CreditCard className="size-4 text-primary" /> Pagos Administrativos
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4 pb-6 px-6">
+              {!estudiante.comprobantes || estudiante.comprobantes.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">Sin otros pagos pendientes</p>
+              ) : (
+                <div className="space-y-3">
+                  {estudiante.comprobantes.map((c: any) => {
+                    const hasMora = (c.tipo === 'MATRICULA' || c.tipo === 'COLEGIATURA') && config?.usarMora && config?.montoMora > 0
+                    return (
+                      <div key={c.id} className="flex items-center justify-between text-sm py-1 border-b last:border-0 border-dashed border-muted/50 pb-2">
+                        <div className="flex flex-col">
+                          <span className="font-medium">{TIPO_PAGO_LABELS[c.tipo] || c.tipo}{c.mes ? ` — ${c.mes}` : ''}</span>
+                          {c.pagado && c.fechaPago && <span className="text-[10px] text-muted-foreground">{formatDate(c.fechaPago)}</span>}
+                          {!c.pagado && hasMora && (
+                            <span className="text-[10px] text-amber-600 font-medium">+ {formatCurrency(config.montoMora)} de mora</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-col items-end">
+                            <span className={cn('font-semibold', c.pagado ? 'text-emerald-600' : 'text-foreground')}>
+                              {formatCurrency(c.monto + (!c.pagado && hasMora ? config.montoMora : 0))}
+                            </span>
+                            {!c.pagado && hasMora && (
+                              <span className="text-[10px] text-muted-foreground line-through decoration-1">{formatCurrency(c.monto)}</span>
+                            )}
+                          </div>
+                          {c.pagado 
+                            ? <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800 text-[10px] px-1.5 py-0">Pagado</Badge>
+                            : <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Pendiente</Badge>
+                          }
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Talonarios (Colegiaturas) */}
+          <Card className="lg:col-span-2 py-0 border-primary/20 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between border-b px-6 py-4 bg-primary/5 rounded-t-xl">
+              <CardTitle className="flex items-center gap-2 text-sm text-primary font-bold">
+                <BookOpen className="size-4" /> Talonario de Colegiaturas
               </CardTitle>
               <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-primary" asChild>
                 <Link href={`/talonarios?estudianteId=${id}`}>Ver todos</Link>
@@ -138,15 +194,17 @@ export default function EstudianteDetailPage() {
                     const total = tal.comprobantes.length
                     const pct = total > 0 ? Math.round((pagados / total) * 100) : 0
                     return (
-                      <div key={tal.id}>
+                      <div key={tal.id} className="p-3 border rounded-lg hover:border-primary/30 transition-colors">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">Talonario {tal.anio}</span>
-                          <Badge variant="secondary" className="text-xs">{pagados}/{total} comprobantes</Badge>
+                          <span className="text-sm font-semibold">Talonario {tal.anio}</span>
+                          <Badge variant="outline" className="text-[10px] border-primary/20 text-primary">{pagados}/{total} meses pagados</Badge>
                         </div>
-                        <Progress value={pct} className="h-2" />
-                        <Button variant="link" size="sm" className="mt-1 h-auto p-0 text-xs" asChild>
-                          <Link href={`/talonarios/${tal.id}`}>Ver detalle →</Link>
-                        </Button>
+                        <Progress value={pct} className="h-1.5" />
+                        <div className="flex justify-end mt-2">
+                          <Button variant="link" size="sm" className="h-auto p-0 text-xs font-medium" asChild>
+                            <Link href={`/talonarios/${tal.id}`}>Gestionar Pagos →</Link>
+                          </Button>
+                        </div>
                       </div>
                     )
                   })}

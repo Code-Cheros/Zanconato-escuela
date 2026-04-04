@@ -38,6 +38,20 @@ export default function ConfiguracionPage() {
     usarMora: false,
   })
 
+  const [historial, setHistorial] = useState<any[]>([])
+  const [loadingHistorial, setLoadingHistorial] = useState(true)
+
+  const fetchHistorial = async () => {
+    setLoadingHistorial(true)
+    try {
+      const res = await fetch('/api/configuracion/historial')
+      const data = await res.json()
+      if (res.ok) setHistorial(data)
+    } finally {
+      setLoadingHistorial(false)
+    }
+  }
+
   useEffect(() => {
     const run = async () => {
       try {
@@ -63,6 +77,7 @@ export default function ConfiguracionPage() {
       }
     }
     run()
+    fetchHistorial()
   }, [])
 
   const save = async () => {
@@ -79,6 +94,7 @@ export default function ConfiguracionPage() {
         return
       }
       toast.success('Configuración actualizada')
+      fetchHistorial()
     } catch {
       toast.error('Error de conexión')
     } finally {
@@ -124,10 +140,10 @@ export default function ConfiguracionPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full pb-10">
       <Header title="Configuración" subtitle="Parámetros globales del sistema" />
 
-      <div className="p-4 sm:p-6">
+      <div className="p-4 sm:p-6 space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Configuración de Talonarios y Recibos</CardTitle>
@@ -246,6 +262,46 @@ export default function ConfiguracionPage() {
               {saving ? 'Guardando...' : 'Guardar configuración'}
             </Button>
           </CardFooter>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Historial de Cambios</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingHistorial ? (
+              <p className="text-sm text-muted-foreground">Cargando historial...</p>
+            ) : historial.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No hay cambios registrados en el historial.</p>
+            ) : (
+              <div className="rounded-md border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="h-10 px-4 text-left font-medium">Fecha</th>
+                      <th className="h-10 px-4 text-left font-medium">Usuario</th>
+                      <th className="h-10 px-4 text-left font-medium">Campo</th>
+                      <th className="h-10 px-4 text-left font-medium">Anterior</th>
+                      <th className="h-10 px-4 text-left font-medium">Nuevo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historial.map((h) => (
+                      <tr key={h.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                        <td className="p-4 whitespace-nowrap text-xs text-muted-foreground">
+                          {new Date(h.fecha).toLocaleString()}
+                        </td>
+                        <td className="p-4 font-medium">{h.nombreUsuario}</td>
+                        <td className="p-4">{h.campo}</td>
+                        <td className="p-4 text-muted-foreground line-through decoration-red-400/50 decoration-2">{h.valorAnterior}</td>
+                        <td className="p-4 font-semibold text-emerald-600">{h.valorNuevo}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
         </Card>
       </div>
     </div>

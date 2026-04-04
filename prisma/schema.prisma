@@ -35,6 +35,7 @@ model Estudiante {
   activo     Boolean     @default(true)
   pagos      Pago[]
   talonarios Talonario[]
+  comprobantes Comprobante[]
   creadoEn   DateTime    @default(now())
 }
 
@@ -51,16 +52,18 @@ model Talonario {
 
 
 model Comprobante {
-  id          String    @id @default(cuid())
-  talonarioId String
-  talonario   Talonario @relation(fields: [talonarioId], references: [id], onDelete: Cascade)
-  tipo        TipoPago
-  mes         String?
-  monto       Float
-  pagado      Boolean   @default(false)
-  fechaPago   DateTime?
-  orden       Int       @default(0)
-  pago        Pago?
+  id           String     @id @default(cuid())
+  talonarioId  String?
+  talonario    Talonario? @relation(fields: [talonarioId], references: [id], onDelete: Cascade)
+  estudianteId String?
+  estudiante   Estudiante? @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  tipo         TipoPago
+  mes          String?
+  monto        Float
+  pagado       Boolean    @default(false)
+  fechaPago    DateTime?
+  orden        Int        @default(0)
+  pago         Pago?
 }
 
 model Pago {
@@ -95,13 +98,23 @@ model PasswordResetToken {
 }
 
 model ConfiguracionSistema {
-  id               String   @id @default("global")
-  logoUrl          String?
-  montoMatricula   Float    @default(10)
-  montoPapeleria   Float    @default(15)
-  montoMensualidad Float    @default(20)
+  id                String   @id @default("global")
+  logoUrl           String?
+  montoMatricula    Float    @default(10)
+  montoPapeleria    Float    @default(15)
+  montoMensualidad  Float    @default(20)
   montoAlimentacion Float    @default(10)
-  montoMora        Float?   @default(0)
-  usarMora         Boolean  @default(false)
-  actualizadoEn    DateTime @updatedAt
+  montoMora         Float?   @default(0)
+  usarMora          Boolean  @default(false)
+  actualizadoEn     DateTime @updatedAt
+}
+
+model HistorialConfiguracion {
+  id             String   @id @default(cuid())
+  usuarioId      String
+  nombreUsuario  String
+  fecha          DateTime @default(now())
+  campo          String   // e.g., 'montoMatricula', 'montoPapeleria', etc.
+  valorAnterior  String
+  valorNuevo     String
 }

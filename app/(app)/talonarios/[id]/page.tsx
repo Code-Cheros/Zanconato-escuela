@@ -45,10 +45,18 @@ export default function TalonarioDetailPage() {
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
 
+  const [config, setConfig] = useState<any>(null)
+
   useEffect(() => {
-    fetch(`/api/talonarios/${id}`)
-      .then(r => r.json())
-      .then(d => { setTalonario(d); setLoading(false) })
+    Promise.all([
+      fetch(`/api/talonarios/${id}`).then(r => r.json()),
+      fetch('/api/configuracion').then(r => r.json()).catch(() => null)
+    ])
+      .then(([tal, conf]) => {
+        setTalonario(tal)
+        setConfig(conf)
+        setLoading(false)
+      })
       .catch(() => { toast.error('Error'); setLoading(false) })
   }, [id])
 
@@ -194,34 +202,47 @@ export default function TalonarioDetailPage() {
               </CardHeader>
               <CardContent className="p-0">
                 <ul className="divide-y">
-                  {comps.map((c: any, idx: number) => (
-                    <li key={c.id}>
-                      <div className="flex items-center justify-between px-5 py-3 gap-4">
-                        <div className="flex items-center gap-3 min-w-0">
-                          {c.pagado
-                            ? <CheckCircle className="size-4 shrink-0 text-emerald-500" />
-                            : <Circle className="size-4 shrink-0 text-muted-foreground/40" />
-                          }
-                          <span className="text-sm text-foreground truncate">
-                            {TIPO_PAGO_LABELS[c.tipo]}{c.mes ? ` — ${c.mes}` : ''}
-                          </span>
+                  {comps.map((c: any, idx: number) => {
+                    const hasMora = (c.tipo === 'MATRICULA' || c.tipo === 'COLEGIATURA') && config?.usarMora && (config?.montoMora ?? 0) > 0
+                    return (
+                      <li key={c.id}>
+                        <div className="flex items-center justify-between px-5 py-3 gap-4">
+                          <div className="flex items-center gap-3 min-w-0 text-sm">
+                            {c.pagado
+                              ? <CheckCircle className="size-4 shrink-0 text-emerald-500" />
+                              : <Circle className="size-4 shrink-0 text-muted-foreground/40" />
+                            }
+                            <div className="flex flex-col truncate">
+                              <span className="text-foreground truncate font-medium">
+                                {TIPO_PAGO_LABELS[c.tipo]}{c.mes ? ` — ${c.mes}` : ''}
+                              </span>
+                              {!c.pagado && hasMora && (
+                                <span className="text-[10px] text-amber-600 font-medium">+ {formatCurrency(config.montoMora)} de mora</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-3 text-sm">
+                            {c.pagado && c.fechaPago && (
+                              <span className="hidden text-xs text-muted-foreground sm:inline">{formatDate(c.fechaPago)}</span>
+                            )}
+                            <div className="flex flex-col items-end">
+                              <span className={cn('font-semibold tabular-nums', c.pagado ? 'text-emerald-600' : 'text-foreground')}>
+                                {formatCurrency(c.monto + (!c.pagado && hasMora ? config.montoMora : 0))}
+                              </span>
+                              {!c.pagado && hasMora && (
+                                <span className="text-[10px] text-muted-foreground line-through decoration-1">{formatCurrency(c.monto)}</span>
+                              )}
+                            </div>
+                            {c.pagado
+                              ? <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800 text-[10px] px-1.5 py-0">Pagado</Badge>
+                              : <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-medium">Pendiente</Badge>
+                            }
+                          </div>
                         </div>
-                        <div className="flex shrink-0 items-center gap-3 text-sm">
-                          {c.pagado && c.fechaPago && (
-                            <span className="hidden text-xs text-muted-foreground sm:inline">{formatDate(c.fechaPago)}</span>
-                          )}
-                          <span className={cn('font-semibold tabular-nums', c.pagado ? 'text-emerald-600' : 'text-foreground')}>
-                            {formatCurrency(c.monto)}
-                          </span>
-                          {c.pagado
-                            ? <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800 text-xs">Pagado</Badge>
-                            : <Badge variant="secondary" className="text-xs">Pendiente</Badge>
-                          }
-                        </div>
-                      </div>
-                      {idx < comps.length - 1 && <Separator />}
-                    </li>
-                  ))}
+                        {idx < comps.length - 1 && <Separator />}
+                      </li>
+                    )
+                  })}
                 </ul>
               </CardContent>
             </Card>
