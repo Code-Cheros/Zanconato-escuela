@@ -102,6 +102,7 @@ export async function POST(req: NextRequest) {
         montoPapeleria: 15,
         montoMensualidad: 20,
         montoAlimentacion: 10,
+        diaLimitePago: 26,
         montoMora: 0,
         usarMora: false,
       },

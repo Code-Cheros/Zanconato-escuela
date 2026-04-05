@@ -6,7 +6,8 @@ import Header from '@/components/layout/Header'
 import { ArrowLeft, Printer, CheckCircle, Circle, BookOpen, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { formatCurrency, TIPO_PAGO_LABELS, formatDate, MESES } from '@/lib/utils'
+import { formatCurrency, TIPO_PAGO_LABELS, formatDate } from '@/lib/utils'
+import { hasMoraColegiatura } from '@/lib/mora'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -205,22 +206,14 @@ export default function TalonarioDetailPage() {
               <CardContent className="p-0">
                 <ul className="divide-y">
                   {comps.map((c: any, idx: number) => {
-                    const now = new Date()
-                    const currMonth = now.getMonth()
-                    const currYear = now.getFullYear()
-
-                    const isVencido = (c: any) => {
-                      const anio = talonario.anio || currYear
-                      if (anio < currYear) return true
-                      if (anio > currYear) return false
-                      if (!c.mes) return false
-                      const mIdx = MESES.findIndex(m => m.toUpperCase() === String(c.mes).toUpperCase())
-                      if (mIdx === -1) return false
-                      return mIdx < currMonth
-                    }
-
-                    const hasMora = (c.tipo === 'MATRICULA' || c.tipo === 'COLEGIATURA') && 
-                                   config?.usarMora && (config?.montoMora ?? 0) > 0 && isVencido(c)
+                    const hasMora = hasMoraColegiatura({
+                      tipo: c.tipo,
+                      mes: c.mes,
+                      anio: talonario.anio,
+                      usarMora: config?.usarMora,
+                      montoMora: config?.montoMora,
+                      diaLimitePago: config?.diaLimitePago,
+                    })
                     return (
                       <li key={c.id}>
                         <div className="flex items-center justify-between px-5 py-3 gap-4">

@@ -50,7 +50,10 @@ async function main() {
     create: {
       id: 'global',
       montoMatricula: 10,
+      montoPapeleria: 15,
       montoMensualidad: 20,
+      montoAlimentacion: 10,
+      diaLimitePago: 26,
       montoMora: 0,
       usarMora: false,
     },

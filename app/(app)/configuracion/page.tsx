@@ -16,6 +16,7 @@ interface Configuracion {
   montoPapeleria: number
   montoMensualidad: number
   montoAlimentacion: number
+  diaLimitePago: number
   montoMora: number | null
   usarMora: boolean
 }
@@ -34,6 +35,7 @@ export default function ConfiguracionPage() {
     montoPapeleria: 15,
     montoMensualidad: 20,
     montoAlimentacion: 10,
+    diaLimitePago: 26,
     montoMora: 0,
     usarMora: false,
   })
@@ -67,6 +69,7 @@ export default function ConfiguracionPage() {
           montoPapeleria: Number(data.montoPapeleria ?? 15),
           montoMensualidad: Number(data.montoMensualidad ?? 20),
           montoAlimentacion: Number(data.montoAlimentacion ?? 10),
+          diaLimitePago: Number(data.diaLimitePago ?? 26),
           montoMora: Number(data.montoMora ?? 0),
           usarMora: Boolean(data.usarMora),
         })
@@ -267,6 +270,23 @@ export default function ConfiguracionPage() {
                       onChange={(e) => setForm({ ...form, montoMora: Number(e.target.value) })}
                       disabled={!form.usarMora}
                     />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="diaLimitePago">Día límite de pago mensualidad</Label>
+                    <Input
+                      id="diaLimitePago"
+                      type="number"
+                      step="1"
+                      min="1"
+                      max="31"
+                      value={form.diaLimitePago}
+                      onChange={(e) => setForm({ ...form, diaLimitePago: Number(e.target.value) })}
+                      disabled={!form.usarMora}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      La mora se aplicará automáticamente solo en colegiatura después de este día de cada mes.
+                    </p>
                   </div>
                 </div>
               </>

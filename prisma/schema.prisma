@@ -115,6 +115,7 @@ model ConfiguracionSistema {
   montoPapeleria    Float    @default(15)
   montoMensualidad  Float    @default(20)
   montoAlimentacion Float    @default(10)
+  diaLimitePago     Int      @default(26)
   montoMora         Float?   @default(0)
   usarMora          Boolean  @default(false)
   actualizadoEn     DateTime @updatedAt

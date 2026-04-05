@@ -5,7 +5,8 @@ import { useSearchParams } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import { Plus, X, CreditCard, Filter, Search, Eye, Printer } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { formatCurrency, formatDate, TIPO_PAGO_LABELS, MESES, GRADOS, SECCIONES } from '@/lib/utils'
+import { formatCurrency, formatDate, TIPO_PAGO_LABELS, GRADOS, SECCIONES } from '@/lib/utils'
+import { hasMoraColegiatura } from '@/lib/mora'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -107,6 +108,7 @@ export default function PagosPage() {
   const [talonarios, setTalonarios] = useState<Talonario[]>([])
   const [adminComprobantes, setAdminComprobantes] = useState<Comprobante[]>([])
   const [selectedTalonario, setSelectedTalonario] = useState('')
+  const [selectedAlimentacionTalonario, setSelectedAlimentacionTalonario] = useState('')
   const [selectedComprobante, setSelectedComprobante] = useState('')
   const [selectedTipoPago, setSelectedTipoPago] = useState('')
   const [nuevoTipoPago, setNuevoTipoPago] = useState('')
@@ -270,7 +272,7 @@ export default function PagosPage() {
         toast.success('Pago registrado exitosamente')
         setShowForm(false)
         setNie(''); setEstudiante(null); setTalonarios([]); setAdminComprobantes([])
-        setSelectedTalonario(''); setSelectedComprobante('')
+        setSelectedTalonario(''); setSelectedAlimentacionTalonario(''); setSelectedComprobante('')
         setSelectedTipoPago(''); setNuevoTipoPago(''); setCantidadOtro('1'); setSelectedTipoRapido(''); setMontoManual(''); setNotas('')
         fetchPagos()
       } else {
@@ -283,10 +285,17 @@ export default function PagosPage() {
 
   const talonarioActual = talonarios.find(t => t.id === selectedTalonario)
   const comprobantesDisponibles = talonarioActual?.comprobantes.filter(c => !c.pagado && c.tipo === 'COLEGIATURA') || []
+  const talonarioAlimentacionActual = talonarios.find(t => t.id === selectedAlimentacionTalonario)
+  const comprobantesAlimentacionDisponibles = talonarioAlimentacionActual?.comprobantes.filter(c => !c.pagado && c.tipo === 'ALIMENTACION') || []
+  const talonariosAlimentacionDisponibles = talonarios
+    .filter(t => t.comprobantes.some(c => c.tipo === 'ALIMENTACION'))
+    .slice()
+    .sort((a, b) => b.anio - a.anio)
 
   const esMensualidad = selectedTipoPago === 'COLEGIATURA'
+  const esAlimentacion = selectedTipoPago === 'ALIMENTACION'
   const esTipoOtro = selectedTipoPago === 'OTRO'
-  const esAdministrativoConRecibo = ['MATRICULA', 'PAPELERIA', 'ALIMENTACION'].includes(selectedTipoPago)
+  const esAdministrativoConRecibo = ['MATRICULA', 'PAPELERIA'].includes(selectedTipoPago)
   const comprobantesAdminFiltrados = adminComprobantes.filter(c => c.tipo === selectedTipoPago)
 
   const tiposPersonalizadosRecientes = Array.from(new Set(
@@ -410,25 +419,48 @@ export default function PagosPage() {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="tipo-pago-select">Tipo de Pago</Label>
-                  <Select value={selectedTipoPago || 'none'} onValueChange={v => {
-                    const next = v === 'none' ? '' : v
-                    setSelectedTipoPago(next)
-                    setSelectedTalonario('')
-                    setSelectedComprobante('')
-                    setCantidadOtro('1')
-                    if (next === 'COLEGIATURA') {
-                      setMontoManual(''); setNuevoTipoPago('')
-                    } else if (['MATRICULA', 'PAPELERIA', 'ALIMENTACION'].includes(next)) {
-                      setNuevoTipoPago('')
-                      const admins = adminComprobantes.filter(c => c.tipo === next)
-                      if (next !== 'ALIMENTACION' && admins.length === 1) {
-                        setSelectedComprobante(admins[0].id)
-                        setMontoManual(String(admins[0].monto))
-                      } else {
-                        setMontoManual(String(config?.[`monto${next.charAt(0) + next.slice(1).toLowerCase()}`] || ''))
+                  <Select
+                    value={selectedTipoPago || 'none'}
+                    onValueChange={v => {
+                      const next = v === 'none' ? '' : v
+                      setSelectedTipoPago(next)
+                      setSelectedTalonario('')
+                      setSelectedAlimentacionTalonario('')
+                      setSelectedComprobante('')
+                      setCantidadOtro('1')
+
+                      if (next === 'COLEGIATURA') {
+                        setMontoManual('')
+                        setNuevoTipoPago('')
+                        return
                       }
-                    } else { setMontoManual('') }
-                  }}>
+
+                      if (next === 'OTRO') {
+                        setMontoManual('')
+                        return
+                      }
+
+                      if (next === 'ALIMENTACION') {
+                        setNuevoTipoPago('')
+                        setMontoManual(String(config?.montoAlimentacion || ''))
+                        return
+                      }
+
+                      if (next === 'MATRICULA' || next === 'PAPELERIA') {
+                        setNuevoTipoPago('')
+                        const admins = adminComprobantes.filter(c => c.tipo === next)
+                        if (admins.length === 1) {
+                          setSelectedComprobante(admins[0].id)
+                          setMontoManual(String(admins[0].monto))
+                        } else {
+                          setMontoManual(String(config?.[`monto${next.charAt(0) + next.slice(1).toLowerCase()}`] || ''))
+                        }
+                        return
+                      }
+
+                      setMontoManual('')
+                    }}
+                  >
                     <SelectTrigger id="tipo-pago-select" className="w-full"><SelectValue placeholder="Seleccionar tipo" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Seleccionar tipo</SelectItem>
@@ -449,12 +481,28 @@ export default function PagosPage() {
                   </div>
                 )}
 
-                {((esMensualidad && !!selectedTalonario) || esAdministrativoConRecibo) && (
+                {esAlimentacion && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="alimentacion-talonario-select">Año activo</Label>
+                    <Select value={selectedAlimentacionTalonario} onValueChange={v => { setSelectedAlimentacionTalonario(v); setSelectedComprobante('') }}>
+                      <SelectTrigger id="alimentacion-talonario-select" className="w-full">
+                        <SelectValue placeholder="Seleccionar año" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {talonariosAlimentacionDisponibles.map(t => (
+                          <SelectItem key={t.id} value={t.id}>Año {t.anio}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {((esMensualidad && !!selectedTalonario) || (esAlimentacion && !!selectedAlimentacionTalonario) || esAdministrativoConRecibo) && (
                   <div className="space-y-1.5">
                     <Label>Seleccionar Mes / Recibo</Label>
                     <Select value={selectedComprobante} onValueChange={v => {
                       setSelectedComprobante(v)
-                      if (!esMensualidad) {
+                      if (!esMensualidad && !esAlimentacion) {
                         const comp = adminComprobantes.find(c => c.id === v)
                         if (comp) setMontoManual(String(comp.monto)) // This is a bit redundant if it has mora
                       }
@@ -463,23 +511,26 @@ export default function PagosPage() {
                         <SelectValue placeholder="Seleccionar..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {(esMensualidad ? comprobantesDisponibles : comprobantesAdminFiltrados).map((c) => {
-                          const now = new Date()
-                          const currM = now.getMonth()
-                          const currY = now.getFullYear()
+                        {(esMensualidad
+                          ? comprobantesDisponibles
+                          : esAlimentacion
+                            ? comprobantesAlimentacionDisponibles
+                            : comprobantesAdminFiltrados
+                        ).map((c) => {
+                          const anioReferencia = esMensualidad
+                            ? talonarioActual?.anio
+                            : esAlimentacion
+                              ? talonarioAlimentacionActual?.anio
+                              : c.talonario?.anio
 
-                          const isVencido = () => {
-                            const anio = c.talonario?.anio || currY
-                            if (anio < currY) return true
-                            if (anio > currY) return false
-                            if (!c.mes) return false
-                            const mIdx = MESES.findIndex(m => m.toUpperCase() === String(c.mes).toUpperCase())
-                            if (mIdx === -1) return false
-                            return mIdx < currM
-                          }
-
-                          const hasMora = (c.tipo === 'MATRICULA' || c.tipo === 'COLEGIATURA') && 
-                                         config?.usarMora && (config?.montoMora || 0) > 0 && isVencido()
+                          const hasMora = hasMoraColegiatura({
+                            tipo: c.tipo,
+                            mes: c.mes,
+                            anio: anioReferencia,
+                            usarMora: config?.usarMora,
+                            montoMora: config?.montoMora,
+                            diaLimitePago: config?.diaLimitePago,
+                          })
                           
                           const total = c.monto + (hasMora ? (config?.montoMora || 0) : 0)
 

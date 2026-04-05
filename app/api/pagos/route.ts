@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { MESES } from '@/lib/utils'
+import { hasMoraColegiatura } from '@/lib/mora'
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -169,6 +169,7 @@ export async function POST(req: NextRequest) {
     if (comprobanteId) {
       const comprobante = await prisma.comprobante.findUnique({
         where: { id: comprobanteId },
+        include: { talonario: { select: { anio: true } } },
       })
 
       if (!comprobante) {
@@ -181,26 +182,14 @@ export async function POST(req: NextRequest) {
 
       const config = await prisma.configuracionSistema.findUnique({ where: { id: 'global' } })
       
-      const now = new Date()
-      const currMonth = now.getMonth()
-      const currYear = now.getFullYear()
-
-      const isVencido = (c: any) => {
-        const anio = c.talonario?.anio || currYear
-        if (anio < currYear) return true
-        if (anio > currYear) return false
-        
-        if (!c.mes) return false
-        
-        const mIdx = MESES.findIndex(m => m.toUpperCase() === String(c.mes).toUpperCase())
-        if (mIdx === -1) return false
-        
-        return mIdx < currMonth
-      }
-
-      const hasMora = (comprobante.tipo === 'MATRICULA' || comprobante.tipo === 'COLEGIATURA') && 
-                     config?.usarMora && (config?.montoMora || 0) > 0 && 
-                     isVencido(comprobante)
+      const hasMora = hasMoraColegiatura({
+        tipo: comprobante.tipo,
+        mes: comprobante.mes,
+        anio: comprobante.talonario?.anio,
+        usarMora: config?.usarMora,
+        montoMora: config?.montoMora,
+        diaLimitePago: (config as any)?.diaLimitePago,
+      })
       
       const montoFinal = comprobante.monto + (hasMora ? (config?.montoMora || 0) : 0)
 
@@ -236,12 +225,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Debe indicar el nombre del nuevo tipo de pago' }, { status: 400 })
     }
 
-    const cantidadFinal = tipo === 'OTRO'
-      ? Math.trunc(Number(cantidad ?? 1))
-      : null
+    let cantidadFinal: number | null = null
 
-    if (tipo === 'OTRO' && (!Number.isFinite(cantidadFinal) || cantidadFinal <= 0)) {
-      return NextResponse.json({ error: 'Debe indicar una cantidad válida' }, { status: 400 })
+    if (tipo === 'OTRO') {
+      cantidadFinal = Math.trunc(Number(cantidad ?? 1))
+
+      if (!Number.isFinite(cantidadFinal) || cantidadFinal <= 0) {
+        return NextResponse.json({ error: 'Debe indicar una cantidad válida' }, { status: 400 })
+      }
     }
 
     const pago = await prisma.pago.create({
@@ -250,7 +241,7 @@ export async function POST(req: NextRequest) {
         monto: Number(monto),
         tipo,
         tipoPersonalizado: tipo === 'OTRO' ? String(tipoPersonalizado).trim() : null,
-        cantidad: tipo === 'OTRO' ? cantidadFinal : null,
+        cantidad: cantidadFinal,
         registradoPor: registradorId,
         notas,
       } as any,

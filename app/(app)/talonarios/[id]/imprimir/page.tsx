@@ -6,6 +6,7 @@ import { Printer, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { TIPO_PAGO_LABELS } from '@/lib/utils'
+import { hasMoraColegiatura } from '@/lib/mora'
 import { Button } from '@/components/ui/button'
 
 interface Comprobante {
@@ -119,6 +120,7 @@ function SlipCopy({
   showExtras,
   mostrarMora,
   montoMora,
+  diaLimitePago,
 }: {
   copyTitle: string
   estudiante: Talonario['estudiante']
@@ -129,6 +131,7 @@ function SlipCopy({
   showExtras: boolean
   mostrarMora: boolean
   montoMora: number
+  diaLimitePago: number
 }) {
   const tipo = TIPO_PAGO_LABELS[comp.tipo]
   const concepto = comp.mes ? `${tipo} ${comp.mes} ${anio}` : tipo
@@ -139,29 +142,14 @@ function SlipCopy({
     year: 'numeric',
   }).format(new Date())
   const cuota = formatMoney(comp.monto)
-  const showMoraForThisType = comp.tipo === 'MATRICULA' || comp.tipo === 'COLEGIATURA'
-  
-  const isVencido = () => {
-    const now = new Date()
-    const currMonth = now.getMonth()
-    const currYear = now.getFullYear()
-    
-    if (anio < currYear) return true
-    if (anio > currYear) return false
-    if (!comp.mes) return false
-    
-    // MESES is not explicitly imported here as names, but we can assume it's available if we import it
-    const MESES_NAMES = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-    ]
-    
-    const mIdx = MESES_NAMES.findIndex(m => m.toUpperCase() === String(comp.mes).toUpperCase())
-    if (mIdx === -1) return false
-    return mIdx < currMonth
-  }
-
-  const finalMostrarMora = mostrarMora && showMoraForThisType && isVencido()
+  const finalMostrarMora = mostrarMora && hasMoraColegiatura({
+    tipo: comp.tipo,
+    mes: comp.mes,
+    anio,
+    usarMora: mostrarMora,
+    montoMora,
+    diaLimitePago,
+  })
   const mora = formatMoneyCompact(comp.monto + montoMora)
   const nombre = normalizeText(estudiante.nombre)
   const grado = estudiante.grado || '9'
@@ -239,6 +227,7 @@ function ComprobanteCard({
   logoUrl,
   mostrarMora,
   montoMora,
+  diaLimitePago,
 }: {
   comp: Comprobante
   estudiante: Talonario['estudiante']
@@ -246,6 +235,7 @@ function ComprobanteCard({
   logoUrl?: string | null
   mostrarMora: boolean
   montoMora: number
+  diaLimitePago: number
 }) {
   const talonarioCode = getSeededNumber(`${comp.id}-${anio}-${estudiante.nie}`)
 
@@ -262,6 +252,7 @@ function ComprobanteCard({
           showExtras={false}
           mostrarMora={mostrarMora}
           montoMora={montoMora}
+          diaLimitePago={diaLimitePago}
         />
         <SlipCopy
           copyTitle="ORIGINAL COLEGIO"
@@ -273,6 +264,7 @@ function ComprobanteCard({
           showExtras
           mostrarMora={mostrarMora}
           montoMora={montoMora}
+          diaLimitePago={diaLimitePago}
         />
       </div>
 
@@ -294,6 +286,7 @@ export default function ImprimirTalonarioPage() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [usarMora, setUsarMora] = useState(false)
   const [montoMora, setMontoMora] = useState(0)
+  const [diaLimitePago, setDiaLimitePago] = useState(26)
 
   useEffect(() => {
     Promise.all([
@@ -305,6 +298,7 @@ export default function ImprimirTalonarioPage() {
         setLogoUrl(conf?.logoUrl || null)
         setUsarMora(Boolean(conf?.usarMora))
         setMontoMora(Number(conf?.montoMora ?? 0))
+        setDiaLimitePago(Number(conf?.diaLimitePago ?? 26))
         setLoading(false)
       })
       .catch(() => { toast.error('Error'); setLoading(false) })
@@ -362,6 +356,7 @@ export default function ImprimirTalonarioPage() {
                   logoUrl={logoUrl}
                   mostrarMora={usarMora && montoMora > 0}
                   montoMora={montoMora}
+                  diaLimitePago={diaLimitePago}
                 />
               ))}
               {page.length < 4 && [...Array(4 - page.length)].map((_, i) => (

@@ -6,7 +6,8 @@ import Header from '@/components/layout/Header'
 import { ArrowLeft, Edit, BookOpen, CreditCard, User } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { formatCurrency, formatDate, TIPO_PAGO_LABELS, MESES, cn } from '@/lib/utils'
+import { formatCurrency, formatDate, TIPO_PAGO_LABELS, cn } from '@/lib/utils'
+import { hasMoraColegiatura } from '@/lib/mora'
 import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -171,22 +172,14 @@ export default function EstudianteDetailPage() {
                             </div>
                             <div className="space-y-1">
                               {groups[year].map((c: any) => {
-                                const isVencido = (c: any) => {
-                                  const anio = c.talonario?.anio || currYear
-                                  if (anio < currYear) return true
-                                  if (anio > currYear) return false
-                                  
-                                  if (!c.mes) return false
-                                  
-                                  const mIdx = MESES.findIndex(m => m.toUpperCase() === String(c.mes).toUpperCase())
-                                  if (mIdx === -1) return false
-                                  
-                                  return mIdx < currMonth
-                                }
-
-                                const hasMora = (c.tipo === 'MATRICULA' || c.tipo === 'COLEGIATURA') && 
-                                               config?.usarMora && config?.montoMora > 0 && 
-                                               isVencido(c)
+                                const hasMora = hasMoraColegiatura({
+                                  tipo: c.tipo,
+                                  mes: c.mes,
+                                  anio: c.talonario?.anio,
+                                  usarMora: config?.usarMora,
+                                  montoMora: config?.montoMora,
+                                  diaLimitePago: config?.diaLimitePago,
+                                })
                                 return (
                                   <div key={c.id} className="flex items-center justify-between text-sm py-1.5 border-b last:border-0 border-dashed border-muted/40">
                                     <div className="flex flex-col">

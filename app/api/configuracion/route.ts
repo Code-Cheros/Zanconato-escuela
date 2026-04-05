@@ -15,6 +15,7 @@ async function getOrCreateConfig() {
       montoPapeleria: 15,
       montoMensualidad: 20,
       montoAlimentacion: 10,
+      diaLimitePago: 26,
       montoMora: 0,
       usarMora: false,
     },
@@ -42,11 +43,41 @@ export async function PUT(req: NextRequest) {
     const body = await req.json()
     const currentUser = session.user as any
 
+    const resolveUsuarioIdForHistorial = async (): Promise<string | null> => {
+      const sessionUserId = String(currentUser?.id || '').trim()
+      const sessionEmail = String(currentUser?.email || '').trim()
+
+      if (sessionUserId) {
+        const existsById = await prisma.usuario.findUnique({
+          where: { id: sessionUserId },
+          select: { id: true },
+        })
+        if (existsById) return existsById.id
+      }
+
+      if (sessionEmail) {
+        const existsByEmail = await prisma.usuario.findUnique({
+          where: { email: sessionEmail },
+          select: { id: true },
+        })
+        if (existsByEmail) return existsByEmail.id
+      }
+
+      const fallbackUser = await prisma.usuario.findFirst({
+        where: { activo: true },
+        orderBy: { creadoEn: 'asc' },
+        select: { id: true },
+      })
+
+      return fallbackUser?.id ?? null
+    }
+
     const logoUrl = typeof body.logoUrl === 'string' ? body.logoUrl.trim() : ''
     const montoMatricula = Number(body.montoMatricula)
     const montoPapeleria = Number(body.montoPapeleria)
     const montoMensualidad = Number(body.montoMensualidad)
     const montoAlimentacion = Number(body.montoAlimentacion)
+    const diaLimitePago = Number(body.diaLimitePago)
     const montoMora = body.montoMora === '' || body.montoMora === null || body.montoMora === undefined
       ? 0
       : Number(body.montoMora)
@@ -64,6 +95,9 @@ export async function PUT(req: NextRequest) {
     if (!Number.isFinite(montoAlimentacion) || montoAlimentacion < 0) {
       return NextResponse.json({ error: 'Monto de alimentación inválido' }, { status: 400 })
     }
+    if (!Number.isFinite(diaLimitePago) || diaLimitePago < 1 || diaLimitePago > 31) {
+      return NextResponse.json({ error: 'Día límite de pago inválido (debe ser entre 1 y 31)' }, { status: 400 })
+    }
     if (!Number.isFinite(montoMora) || montoMora < 0) {
       return NextResponse.json({ error: 'Monto de mora inválido' }, { status: 400 })
     }
@@ -78,6 +112,7 @@ export async function PUT(req: NextRequest) {
         montoPapeleria,
         montoMensualidad,
         montoAlimentacion,
+        diaLimitePago: Math.trunc(diaLimitePago),
         montoMora,
         usarMora,
       },
@@ -88,6 +123,7 @@ export async function PUT(req: NextRequest) {
         montoPapeleria,
         montoMensualidad,
         montoAlimentacion,
+        diaLimitePago: Math.trunc(diaLimitePago),
         montoMora,
         usarMora,
       },
@@ -99,21 +135,24 @@ export async function PUT(req: NextRequest) {
       { key: 'montoPapeleria', label: 'Papelería' },
       { key: 'montoMensualidad', label: 'Mensualidad' },
       { key: 'montoAlimentacion', label: 'Alimentación' },
+      { key: 'diaLimitePago', label: 'Día límite de pago mensualidad' },
       { key: 'montoMora', label: 'Mora' },
       { key: 'usarMora', label: 'Usar Mora' },
     ]
 
+    const usuarioIdHistorial = await resolveUsuarioIdForHistorial()
+
     const changes = fieldsToTrack
       .filter((f) => oldConfig[f.key] !== config[f.key])
       .map((f) => ({
-        usuarioId: currentUser.id || 'unknown',
-        nombreUsuario: currentUser.nombre || currentUser.email || 'Sistema',
+        usuarioId: usuarioIdHistorial,
+        nombreUsuario: currentUser.nombre || currentUser.name || currentUser.email || 'Sistema',
         campo: f.label,
         valorAnterior: String(oldConfig[f.key] ?? ''),
         valorNuevo: String(config[f.key] ?? ''),
       }))
 
-    if (changes.length > 0) {
+    if (changes.length > 0 && usuarioIdHistorial) {
       await (prisma as any).historialConfiguracion.createMany({
         data: changes,
       })
