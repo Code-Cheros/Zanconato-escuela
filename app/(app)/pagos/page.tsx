@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select,
@@ -40,6 +41,14 @@ import {
 } from '@/components/ui/empty'
 import { cn } from '@/lib/utils'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from '@/components/ui/combobox'
 import { DateRange } from 'react-day-picker'
 
 interface Pago {
@@ -117,6 +126,15 @@ export default function PagosPage() {
   const [montoManual, setMontoManual] = useState('')
   const [notas, setNotas] = useState('')
   const [savingPago, setSavingPago] = useState(false)
+  const [globalTiposPersonalizados, setGlobalTiposPersonalizados] = useState<string[]>([])
+
+  const fetchGlobalTipos = useCallback(async () => {
+    try {
+      const res = await fetch('/api/pagos/tipos-personalizados')
+      const data = await res.json()
+      if (Array.isArray(data)) setGlobalTiposPersonalizados(data)
+    } catch { /* Silent */ }
+  }, [])
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -133,6 +151,7 @@ export default function PagosPage() {
       if (Array.isArray(data)) setAniosDisponibles(data)
     } catch { /* Usar default */ }
   }, [])
+
 
   const fetchPagos = useCallback(async () => {
     setLoading(true)
@@ -167,7 +186,8 @@ export default function PagosPage() {
     fetchConfig()
     fetchAnios()
     fetchPagos()
-  }, [fetchConfig, fetchAnios, fetchPagos])
+    fetchGlobalTipos()
+  }, [fetchConfig, fetchAnios, fetchPagos, fetchGlobalTipos])
 
   const clearFilters = () => {
     setDateRange(undefined)
@@ -249,11 +269,6 @@ export default function PagosPage() {
 
     setSavingPago(true)
     try {
-      const notasBase = notas.trim()
-      const cantidadPayload = selectedTipoPago === 'OTRO'
-        ? Math.trunc(Number(cantidadOtro))
-        : undefined
-
       const res = await fetch('/api/pagos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -263,8 +278,8 @@ export default function PagosPage() {
           comprobanteId: selectedComprobante || undefined,
           monto: selectedComprobante ? undefined : Number(montoManual),
           tipoPersonalizado: selectedTipoPago === 'OTRO' ? nuevoTipoPago.trim() : undefined,
-          cantidad: cantidadPayload,
-          notas: notasBase,
+          cantidad: selectedTipoPago === 'OTRO' ? Math.trunc(Number(cantidadOtro)) : undefined,
+          notas: notas.trim(),
         }),
       })
       const data = await res.json()
@@ -275,6 +290,7 @@ export default function PagosPage() {
         setSelectedTalonario(''); setSelectedAlimentacionTalonario(''); setSelectedComprobante('')
         setSelectedTipoPago(''); setNuevoTipoPago(''); setCantidadOtro('1'); setSelectedTipoRapido(''); setMontoManual(''); setNotas('')
         fetchPagos()
+        fetchGlobalTipos() // Refresh suggestions
       } else {
         toast.error(data.error || 'Error registrando pago')
       }
@@ -298,12 +314,10 @@ export default function PagosPage() {
   const esAdministrativoConRecibo = ['MATRICULA', 'PAPELERIA'].includes(selectedTipoPago)
   const comprobantesAdminFiltrados = adminComprobantes.filter(c => c.tipo === selectedTipoPago)
 
-  const tiposPersonalizadosRecientes = Array.from(new Set(
-    pagos
-      .filter(p => p.tipo === 'OTRO' && p.tipoPersonalizado)
-      .map(p => String(p.tipoPersonalizado).trim())
-      .filter(Boolean)
-  )).slice(0, 8)
+  const todasLasSugerencias = Array.from(new Set([
+    ...globalTiposPersonalizados,
+    ...pagos.filter(p => p.tipo === 'OTRO' && p.tipoPersonalizado).map(p => String(p.tipoPersonalizado).trim())
+  ])).filter(Boolean).slice(0, 15)
 
   const puedeGuardarPago =
     !!estudiante &&
@@ -550,59 +564,67 @@ export default function PagosPage() {
                 )}
 
                 {esTipoOtro && (
-                  <>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="tipo-personalizado">Nombre del Pago</Label>
-                      <Input
-                        id="tipo-personalizado"
-                        value={nuevoTipoPago}
-                        onChange={e => {
-                          setNuevoTipoPago(e.target.value)
-                          setSelectedTipoRapido('manual')
-                        }}
-                        placeholder="Ej: Camisa, Excursión..."
-                        className="h-9"
-                      />
-                    </div>
-                    {tiposPersonalizadosRecientes.length > 0 && (
-                      <div className="space-y-1.5">
-                        <Label>Sugerencias Recientes</Label>
-                        <Select value={selectedTipoRapido} onValueChange={v => {
-                          setSelectedTipoRapido(v)
-                          if (v !== 'manual') setNuevoTipoPago(v)
-                        }}>
-                          <SelectTrigger className="h-9"><SelectValue placeholder="Tipos anteriores..." /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="manual">-- Escribir nuevo --</SelectItem>
-                            {tiposPersonalizadosRecientes.map(t => (
+                    <div className="sm:col-span-12 grid grid-cols-1 gap-4 sm:grid-cols-12 items-end border-y py-6 my-2 bg-muted/10 px-4 rounded-lg animate-in fade-in duration-300">
+                      <div className="sm:col-span-3 space-y-1.5 text-left">
+                        <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ml-0.5">Concepto / Nombre</Label>
+                        <Select 
+                          value={selectedTipoRapido || 'manual'} 
+                          onValueChange={v => {
+                            setSelectedTipoRapido(v)
+                            if (v !== 'manual') setNuevoTipoPago(v)
+                            else setNuevoTipoPago('')
+                          }}
+                        >
+                          <SelectTrigger className="h-10 border-primary/20 bg-background/50">
+                            <SelectValue placeholder="Concepto..." />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-80">
+                            <SelectItem value="manual" className="font-bold text-primary italic">+ Registrar Nuevo</SelectItem>
+                            <Separator className="my-1" />
+                            {todasLasSugerencias.map(t => (
                               <SelectItem key={t} value={t}>{t}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+
+                        {selectedTipoRapido === 'manual' && (
+                          <div className="pt-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                            <Input
+                              value={nuevoTipoPago}
+                              onChange={e => setNuevoTipoPago(e.target.value)}
+                              placeholder="Nombre..."
+                              className="h-10 border-primary/30 focus-visible:ring-primary/20"
+                            />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </>
-                )}
 
-                {esTipoOtro && !selectedComprobante && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="cantidad-otro">Cantidad</Label>
-                    <Input
-                      id="cantidad-otro"
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={cantidadOtro}
-                      onChange={e => setCantidadOtro(e.target.value)}
-                    />
-                  </div>
-                )}
+                      <div className="sm:col-span-2 space-y-1.5 text-left">
+                        <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ml-0.5">Monto</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={montoManual}
+                          onChange={e => setMontoManual(e.target.value)}
+                          placeholder="0.00"
+                          className="h-10 text-lg font-bold bg-background/50"
+                        />
+                      </div>
 
-                {esTipoOtro && !selectedComprobante && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="monto-manual">Monto a Pagar</Label>
-                    <Input id="monto-manual" type="number" step="0.01" value={montoManual} onChange={e => setMontoManual(e.target.value)} />
-                  </div>
+                      <div className="sm:col-span-2 space-y-1.5 text-left">
+                        <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ml-0.5">Cant.</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={cantidadOtro}
+                          onChange={e => setCantidadOtro(e.target.value)}
+                          className="h-10 bg-background/50"
+                        />
+                      </div>
+                      
+                      {/* Even larger empty space to keep items tight on the left */}
+                      <div className="sm:col-span-5" />
+                    </div>
                 )}
 
                 <div className="space-y-1.5 lg:col-span-2">

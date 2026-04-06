@@ -1,4 +1,3 @@
-// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,97 +8,90 @@ datasource db {
 }
 
 model Usuario {
-  id         String     @id @default(cuid())
-  nombre     String
-  email      String     @unique
-  password   String
-  rol        Rol        @default(COLECTOR)
-  activo     Boolean    @default(true)
-  creadoEn   DateTime   @default(now())
-  pagosRegistrados Pago[] @relation("PagoRegistradoPorUsuario")
+  id                   String                   @id @default(cuid())
+  nombre               String
+  email                String                   @unique
+  password             String
+  rol                  Rol                      @default(COLECTOR)
+  activo               Boolean                  @default(true)
+  creadoEn             DateTime                 @default(now())
   cambiosConfiguracion HistorialConfiguracion[] @relation("HistorialConfiguracionUsuario")
-}
-
-enum Rol {
-  COLECTOR
-  MATRICULA
-  ADMINISTRATIVO
+  pagosRegistrados     Pago[]                   @relation("PagoRegistradoPorUsuario")
 }
 
 model Estudiante {
-  id         String      @id @default(cuid())
-  nombre     String
-  nie        String      @unique
-  grado      String
-  seccion    String
-  encargado  String?
-  telefono   String?
-  pasatiempos String?
-  comportamiento String[] @default([])
-  vacunas    String[]     @default([])
-  activo     Boolean     @default(true)
-  pagos      Pago[]
-  talonarios Talonario[]
-  comprobantes Comprobante[]
-  creadoEn   DateTime    @default(now())
+  id                   String        @id @default(cuid())
+  nombre               String
+  nie                  String        @unique
+  grado                String
+  seccion              String
+  encargado            String?
+  telefono             String?
+  creadoEn             DateTime      @default(now())
+  activo               Boolean       @default(true)
+  alergias             String[]      @default([])
+  comportamiento       String[]      @default([])
+  descripcion          String?
+  embarazo             String?
+  embarazoPorQue       String?
+  enfermedades         String[]      @default([])
+  limitaciones         String[]      @default([])
+  pasatiempos          String?
+  problemasAprendizaje String?
+  tipoParto            String?
+  vacunas              String[]      @default([])
+  comprobantes         Comprobante[]
+  pagos                Pago[]
+  talonarios           Talonario[]
 }
 
 model Talonario {
   id           String        @id @default(cuid())
   estudianteId String
-  estudiante   Estudiante    @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
   anio         Int
   grado        String?
   seccion      String?
-  comprobantes Comprobante[]
   creadoEn     DateTime      @default(now())
+  comprobantes Comprobante[]
+  estudiante   Estudiante    @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
 
   @@unique([estudianteId, anio])
 }
 
-
 model Comprobante {
-  id           String     @id @default(cuid())
+  id           String      @id @default(cuid())
   talonarioId  String?
-  talonario    Talonario? @relation(fields: [talonarioId], references: [id], onDelete: Cascade)
-  estudianteId String?
-  estudiante   Estudiante? @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
   tipo         TipoPago
   mes          String?
   monto        Float
-  pagado       Boolean    @default(false)
+  pagado       Boolean     @default(false)
   fechaPago    DateTime?
-  orden        Int        @default(0)
+  orden        Int         @default(0)
+  estudianteId String?
+  estudiante   Estudiante? @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  talonario    Talonario?  @relation(fields: [talonarioId], references: [id], onDelete: Cascade)
   pago         Pago?
 }
 
 model Pago {
-  id            String      @id @default(cuid())
-  estudianteId  String
-  estudiante    Estudiante  @relation(fields: [estudianteId], references: [id])
-  comprobanteId String?     @unique
-  comprobante   Comprobante? @relation(fields: [comprobanteId], references: [id])
-  monto         Float
-  tipo          TipoPago
+  id                String       @id @default(cuid())
+  estudianteId      String
+  comprobanteId     String?      @unique
+  monto             Float
+  tipo              TipoPago
+  fecha             DateTime     @default(now())
+  registradoPor     String
+  notas             String?
   tipoPersonalizado String?
-  cantidad      Int?
-  fecha         DateTime    @default(now())
-  registradoPor String
-  registrador   Usuario     @relation("PagoRegistradoPorUsuario", fields: [registradoPor], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  notas         String?
+  cantidad          Int?
+  comprobante       Comprobante? @relation(fields: [comprobanteId], references: [id])
+  estudiante        Estudiante   @relation(fields: [estudianteId], references: [id])
+  registrador       Usuario      @relation("PagoRegistradoPorUsuario", fields: [registradoPor], references: [id])
 
   @@index([fecha])
   @@index([tipo])
   @@index([estudianteId])
   @@index([registradoPor])
-}
-
-enum TipoPago {
-  MATRICULA
-  PAPELERIA
-  COLEGIATURA
-  ALIMENTACION
-  OTRO
 }
 
 model PasswordResetToken {
@@ -118,19 +110,33 @@ model ConfiguracionSistema {
   montoPapeleria    Float    @default(15)
   montoMensualidad  Float    @default(20)
   montoAlimentacion Float    @default(10)
-  diaLimitePago     Int      @default(26)
   montoMora         Float?   @default(0)
   usarMora          Boolean  @default(false)
   actualizadoEn     DateTime @updatedAt
+  diaLimitePago     Int      @default(26)
 }
 
 model HistorialConfiguracion {
-  id             String   @id @default(cuid())
-  usuarioId      String
-  usuario        Usuario  @relation("HistorialConfiguracionUsuario", fields: [usuarioId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  nombreUsuario  String
-  fecha          DateTime @default(now())
-  campo          String   // e.g., 'montoMatricula', 'montoPapeleria', etc.
-  valorAnterior  String
-  valorNuevo     String
+  id            String   @id @default(cuid())
+  usuarioId     String
+  nombreUsuario String
+  fecha         DateTime @default(now())
+  campo         String
+  valorAnterior String
+  valorNuevo    String
+  usuario       Usuario  @relation("HistorialConfiguracionUsuario", fields: [usuarioId], references: [id])
+}
+
+enum Rol {
+  COLECTOR
+  MATRICULA
+  ADMINISTRATIVO
+}
+
+enum TipoPago {
+  MATRICULA
+  PAPELERIA
+  COLEGIATURA
+  ALIMENTACION
+  OTRO
 }

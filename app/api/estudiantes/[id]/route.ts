@@ -44,7 +44,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params
     const body = await req.json()
-    const { nombre, nie, grado, seccion, encargado, telefono, pasatiempos, comportamiento, vacunas, activo } = body
+    const { 
+      nombre, nie, grado, seccion, encargado, telefono, pasatiempos, comportamiento, vacunas, activo,
+      descripcion, embarazo, embarazoPorQue, tipoParto, problemasAprendizaje, enfermedades, alergias, limitaciones
+    } = body
 
     if (nie && !/^\d{8}$/.test(nie)) {
       return NextResponse.json({ error: 'El NIE debe tener exactamente 8 dígitos numéricos' }, { status: 400 })
@@ -93,6 +96,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         ...(hasPasatiemposField ? { pasatiempos: pasatiemposLimpio } : {}),
         comportamiento: comportamientoLimpio,
         vacunas: vacunasLimpias,
+        descripcion,
+        embarazo,
+        embarazoPorQue,
+        tipoParto,
+        problemasAprendizaje,
+        enfermedades: Array.isArray(enfermedades) ? enfermedades : [],
+        alergias: Array.isArray(alergias) ? alergias : [],
+        limitaciones: Array.isArray(limitaciones) ? limitaciones : [],
         activo: activo !== undefined ? Boolean(activo) : undefined
       },
     })

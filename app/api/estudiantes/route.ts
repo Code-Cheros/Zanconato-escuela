@@ -128,7 +128,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { nombre, nie, grado, seccion, encargado, telefono, pasatiempos, comportamiento, vacunas } = body
+    const { 
+      nombre, nie, grado, seccion, encargado, telefono, pasatiempos, comportamiento, vacunas,
+      descripcion, embarazo, embarazoPorQue, tipoParto, problemasAprendizaje, enfermedades, alergias, limitaciones
+    } = body
 
     if (!nombre || !nie || !grado || !seccion) {
       return NextResponse.json({ error: 'Campos requeridos faltantes' }, { status: 400 })
@@ -200,6 +203,14 @@ export async function POST(req: NextRequest) {
           pasatiempos: pasatiemposLimpio,
           comportamiento: comportamientoLimpio,
           vacunas: vacunasLimpias,
+          descripcion,
+          embarazo,
+          embarazoPorQue,
+          tipoParto,
+          problemasAprendizaje,
+          enfermedades: Array.isArray(enfermedades) ? enfermedades : [],
+          alergias: Array.isArray(alergias) ? alergias : [],
+          limitaciones: Array.isArray(limitaciones) ? limitaciones : [],
         },
       })
 

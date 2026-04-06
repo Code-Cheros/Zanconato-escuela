@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Header from '@/components/layout/Header'
-import { ArrowLeft, Plus, Save } from 'lucide-react'
+import { ArrowLeft, Plus, Save, HeartPulse, Activity, AlertTriangle, Baby, Brain, FileText, X } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { GRADOS, SECCIONES } from '@/lib/utils'
@@ -29,6 +31,9 @@ export default function EditarEstudiantePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [nuevaVacuna, setNuevaVacuna] = useState('')
+  const [nuevaEnfermedad, setNuevaEnfermedad] = useState('')
+  const [nuevaAlergia, setNuevaAlergia] = useState('')
+  const [nuevaLimitacion, setNuevaLimitacion] = useState('')
   const [form, setForm] = useState({
     nombre: '',
     nie: '',
@@ -39,6 +44,15 @@ export default function EditarEstudiantePage() {
     comportamiento: [] as ComportamientoAlumno[],
     vacunas: [] as string[],
     activo: true,
+    // Nuevos campos
+    descripcion: '',
+    embarazo: '',
+    embarazoPorQue: '',
+    tipoParto: '',
+    problemasAprendizaje: '',
+    enfermedades: [] as string[],
+    alergias: [] as string[],
+    limitaciones: [] as string[],
   })
 
   useEffect(() => {
@@ -56,6 +70,14 @@ export default function EditarEstudiantePage() {
             comportamiento: Array.isArray(d.comportamiento) ? d.comportamiento : [],
             vacunas: Array.isArray(d.vacunas) ? d.vacunas : [],
             activo: d.activo ?? true,
+            descripcion: d.descripcion || '',
+            embarazo: d.embarazo || '',
+            embarazoPorQue: d.embarazoPorQue || '',
+            tipoParto: d.tipoParto || '',
+            problemasAprendizaje: d.problemasAprendizaje || '',
+            enfermedades: Array.isArray(d.enfermedades) ? d.enfermedades : [],
+            alergias: Array.isArray(d.alergias) ? d.alergias : [],
+            limitaciones: Array.isArray(d.limitaciones) ? d.limitaciones : [],
           })
         }
         setLoading(false)
@@ -116,6 +138,7 @@ export default function EditarEstudiantePage() {
     })
   }
 
+
   const handleAgregarVacuna = () => {
     const vacuna = nuevaVacuna.trim()
     if (!vacuna) return
@@ -125,6 +148,43 @@ export default function EditarEstudiantePage() {
       return { ...prev, vacunas: [...prev.vacunas, vacuna] }
     })
     setNuevaVacuna('')
+  }
+
+  const handleAgregarEnfermedad = () => {
+    const item = nuevaEnfermedad.trim()
+    if (!item) return
+    setForm(prev => {
+      if (prev.enfermedades.some(v => v.toLowerCase() === item.toLowerCase())) return prev
+      return { ...prev, enfermedades: [...prev.enfermedades, item] }
+    })
+    setNuevaEnfermedad('')
+  }
+
+  const handleAgregarAlergia = () => {
+    const item = nuevaAlergia.trim()
+    if (!item) return
+    setForm(prev => {
+      if (prev.alergias.some(v => v.toLowerCase() === item.toLowerCase())) return prev
+      return { ...prev, alergias: [...prev.alergias, item] }
+    })
+    setNuevaAlergia('')
+  }
+
+  const handleAgregarLimitacion = () => {
+    const item = nuevaLimitacion.trim()
+    if (!item) return
+    setForm(prev => {
+      if (prev.limitaciones.some(v => v.toLowerCase() === item.toLowerCase())) return prev
+      return { ...prev, limitaciones: [...prev.limitaciones, item] }
+    })
+    setNuevaLimitacion('')
+  }
+
+  const removerItem = (field: 'enfermedades' | 'alergias' | 'limitaciones' | 'vacunas', valor: string) => {
+    setForm(prev => ({
+      ...prev,
+      [field]: prev[field].filter(item => item !== valor)
+    }))
   }
 
   const vacunasDisponibles = Array.from(new Set([...VACUNAS_ALUMNO_BASE, ...form.vacunas]))
@@ -282,6 +342,130 @@ export default function EditarEstudiantePage() {
                       maxLength={8}
                       inputMode="numeric"
                     />
+                  </div>
+
+                  <div className="sm:col-span-2 space-y-4 pt-4 border-t">
+                    <div className="flex items-center gap-2 text-primary">
+                      <HeartPulse className="size-5" />
+                      <h3 className="font-bold">Ficha Médica / Datos Personales</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                      <div className="sm:col-span-2 space-y-1.5">
+                        <Label htmlFor="descripcion" className="flex items-center gap-1.5">
+                          <FileText className="size-3.5 text-muted-foreground" />
+                          Descripción General
+                        </Label>
+                        <Textarea
+                          id="descripcion"
+                          name="descripcion"
+                          value={form.descripcion}
+                          onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+                          placeholder="Observaciones generales sobre el alumno..."
+                          className="min-h-[80px]"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="embarazo" className="flex items-center gap-1.5">
+                          <Baby className="size-3.5 text-muted-foreground" />
+                          Embarazo
+                        </Label>
+                        <Input
+                          id="embarazo"
+                          name="embarazo"
+                          value={form.embarazo}
+                          onChange={(e) => setForm({ ...form, embarazo: e.target.value })}
+                          placeholder="Estado o condiciones..."
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="embarazoPorQue">¿Por qué?</Label>
+                        <Input
+                          id="embarazoPorQue"
+                          name="embarazoPorQue"
+                          value={form.embarazoPorQue}
+                          onChange={(e) => setForm({ ...form, embarazoPorQue: e.target.value })}
+                          placeholder="Detalles..."
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="tipoParto">Tipo de parto</Label>
+                        <Input
+                          id="tipoParto"
+                          name="tipoParto"
+                          value={form.tipoParto}
+                          onChange={(e) => setForm({ ...form, tipoParto: e.target.value })}
+                          placeholder="Normal, cesárea..."
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="problemasAprendizaje" className="flex items-center gap-1.5">
+                          <Brain className="size-3.5 text-muted-foreground" />
+                          Problemas de aprendizaje
+                        </Label>
+                        <Input
+                          id="problemasAprendizaje"
+                          name="problemasAprendizaje"
+                          value={form.problemasAprendizaje}
+                          onChange={(e) => setForm({ ...form, problemasAprendizaje: e.target.value })}
+                          placeholder="Detalles de aprendizaje..."
+                        />
+                      </div>
+
+                      {/* Listas Dinámicas */}
+                      {[
+                        { label: 'Enfermedades', field: 'enfermedades', state: nuevaEnfermedad, setState: setNuevaEnfermedad, handler: handleAgregarEnfermedad, icon: Activity },
+                        { label: 'Alergias', field: 'alergias', state: nuevaAlergia, setState: setNuevaAlergia, handler: handleAgregarAlergia, icon: AlertTriangle },
+                        { label: 'Limitaciones', field: 'limitaciones', state: nuevaLimitacion, setState: setNuevaLimitacion, handler: handleAgregarLimitacion, icon: Activity }
+                      ].map((list) => (
+                        <div key={list.field} className="sm:col-span-2 space-y-3 rounded-lg border bg-muted/20 p-4">
+                          <div className="space-y-1">
+                            <Label className="text-sm font-semibold flex items-center gap-1.5">
+                              <list.icon className="size-3.5" />
+                              {list.label}
+                            </Label>
+                            <p className="text-xs text-muted-foreground">Agrega ítems relevantes si aplica.</p>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            {form[list.field as keyof typeof form] instanceof Array && (form[list.field as keyof typeof form] as string[]).map(item => (
+                              <Badge key={item} variant="secondary" className="gap-1 px-2 py-1 pr-1 font-medium">
+                                {item}
+                                <button
+                                  type="button"
+                                  onClick={() => removerItem(list.field as any, item)}
+                                  className="rounded-full p-0.5 hover:bg-muted-foreground/20 transition-colors"
+                                >
+                                  <X className="size-3" />
+                                </button>
+                              </Badge>
+                            ))}
+                          </div>
+
+                          <div className="flex flex-col gap-2 sm:flex-row">
+                            <Input
+                              value={list.state}
+                              onChange={(e) => list.setState(e.target.value)}
+                              placeholder={`Agregar ${list.label.toLowerCase()}...`}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault()
+                                  list.handler()
+                                }
+                              }}
+                            />
+                            <Button type="button" variant="outline" size="sm" className="sm:w-auto" onClick={list.handler}>
+                              <Plus className="size-4" />
+                              Agregar
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="sm:col-span-2 space-y-3 rounded-lg border bg-muted/20 p-4">

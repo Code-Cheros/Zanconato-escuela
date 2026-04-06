@@ -124,9 +124,10 @@ export async function POST(req: NextRequest) {
       monto,
       tipoPersonalizado,
       cantidad,
+      items, // Nuevo campo para pagos múltiples
     } = body
 
-    if (!estudianteId || !tipo) {
+    if (!estudianteId || (!tipo && !items)) {
       return NextResponse.json({ error: 'Datos requeridos faltantes' }, { status: 400 })
     }
 
@@ -163,6 +164,29 @@ export async function POST(req: NextRequest) {
     const registradorId = await resolveRegistradorId()
     if (!registradorId) {
       return NextResponse.json({ error: 'No se encontró un usuario válido para registrar el pago' }, { status: 500 })
+    }
+
+    // [NUEVO] Soporte para múltiples pagos (para el flujo "ir agregando nuevo")
+    if (Array.isArray(items) && items.length > 0) {
+      const result = await prisma.$transaction(async (tx: any) => {
+        const createdPagos = []
+        for (const item of items) {
+          const p = await tx.pago.create({
+            data: {
+              estudianteId,
+              monto: Number(item.monto),
+              tipo: item.tipo || 'OTRO',
+              tipoPersonalizado: (item.tipo || 'OTRO') === 'OTRO' ? String(item.tipoPersonalizado || '').trim() : null,
+              cantidad: item.cantidad ? Math.trunc(Number(item.cantidad)) : 1,
+              registradoPor: registradorId,
+              notas: (item.notas || notas || '').trim(),
+            } as any,
+          })
+          createdPagos.push(p)
+        }
+        return createdPagos
+      })
+      return NextResponse.json(result, { status: 201 })
     }
 
     // Si se proporciona comprobanteId, realizamos la vinculación y marcamos como pagado.

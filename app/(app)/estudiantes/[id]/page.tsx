@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Header from '@/components/layout/Header'
-import { ArrowLeft, Edit, BookOpen, CreditCard, User } from 'lucide-react'
+import { ArrowLeft, Edit, BookOpen, CreditCard, User, HeartPulse, Activity, AlertTriangle, Baby, Brain, FileText } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { formatCurrency, formatDate, TIPO_PAGO_LABELS, cn } from '@/lib/utils'
@@ -152,6 +152,75 @@ export default function EstudianteDetailPage() {
                     )}
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Ficha Médica */}
+          <Card>
+            <CardHeader className="border-b pb-3">
+              <CardTitle className="flex items-center gap-2 text-sm text-primary">
+                <HeartPulse className="size-4" /> Ficha Médica
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4 space-y-4 shadow-inner">
+              {estudiante.descripcion && (
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                    <FileText className="size-3" /> Descripción
+                  </p>
+                  <p className="text-sm border-l-2 border-primary/20 pl-2 py-1 bg-muted/20 rounded-r-md italic">
+                    {estudiante.descripcion}
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="space-y-1">
+                  <p className="font-bold text-muted-foreground flex items-center gap-1">
+                    <Baby className="size-3" /> Embarazo
+                  </p>
+                  <p className="font-medium">{estudiante.embarazo || '—'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="font-bold text-muted-foreground">¿Por qué?</p>
+                  <p className="font-medium">{estudiante.embarazoPorQue || '—'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="font-bold text-muted-foreground">Tipo de parto</p>
+                  <p className="font-medium">{estudiante.tipoParto || '—'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="font-bold text-muted-foreground flex items-center gap-1">
+                    <Brain className="size-3" /> Aprendizaje
+                  </p>
+                  <p className="font-medium">{estudiante.problemasAprendizaje || '—'}</p>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-2 border-t">
+                {[
+                  { label: 'Enfermedades', data: estudiante.enfermedades, icon: Activity, color: 'bg-blue-50 text-blue-700 border-blue-100' },
+                  { label: 'Alergias', data: estudiante.alergias, icon: AlertTriangle, color: 'bg-amber-50 text-amber-700 border-amber-100' },
+                  { label: 'Limitaciones', data: estudiante.limitaciones, icon: Activity, color: 'bg-rose-50 text-rose-700 border-rose-100' },
+                ].map((sec) => (
+                  <div key={sec.label} className="space-y-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                      <sec.icon className="size-3" /> {sec.label}
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {Array.isArray(sec.data) && sec.data.length > 0 ? (
+                        sec.data.map((item: string) => (
+                          <Badge key={item} variant="outline" className={cn("text-[10px] py-0", sec.color)}>
+                            {item}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">Ninguno registrado</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
