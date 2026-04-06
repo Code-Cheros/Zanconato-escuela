@@ -32,7 +32,6 @@ export default function NuevoEstudiantePage() {
     seccion: '',
     encargado: '',
     telefono: '',
-    pasatiempos: '',
     comportamiento: [] as ComportamientoAlumno[],
     vacunas: [] as string[],
   })
@@ -255,19 +254,8 @@ export default function NuevoEstudiantePage() {
 
                   <div className="sm:col-span-2 space-y-3 rounded-lg border bg-muted/20 p-4">
                     <div className="space-y-1">
-                      <Label htmlFor="pasatiempos" className="text-sm font-semibold">Comportamiento del Alumno</Label>
+                      <Label className="text-sm font-semibold">Comportamiento del Alumno</Label>
                       <p className="text-xs text-muted-foreground">Registra observaciones para seguimiento pedagógico.</p>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="pasatiempos">Pasatiempos</Label>
-                      <Input
-                        id="pasatiempos"
-                        name="pasatiempos"
-                        value={form.pasatiempos}
-                        onChange={handleChange}
-                        placeholder="Ej: Fútbol, dibujo, lectura"
-                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

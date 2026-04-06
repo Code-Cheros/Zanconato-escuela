@@ -36,7 +36,6 @@ export default function EditarEstudiantePage() {
     seccion: '',
     encargado: '',
     telefono: '',
-    pasatiempos: '',
     comportamiento: [] as ComportamientoAlumno[],
     vacunas: [] as string[],
     activo: true,
@@ -54,7 +53,6 @@ export default function EditarEstudiantePage() {
             seccion: d.seccion || '',
             encargado: d.encargado || '',
             telefono: d.telefono || '',
-            pasatiempos: d.pasatiempos || '',
             comportamiento: Array.isArray(d.comportamiento) ? d.comportamiento : [],
             vacunas: Array.isArray(d.vacunas) ? d.vacunas : [],
             activo: d.activo ?? true,
@@ -288,19 +286,8 @@ export default function EditarEstudiantePage() {
 
                   <div className="sm:col-span-2 space-y-3 rounded-lg border bg-muted/20 p-4">
                     <div className="space-y-1">
-                      <Label htmlFor="pasatiempos" className="text-sm font-semibold">Comportamiento del Alumno</Label>
+                      <Label className="text-sm font-semibold">Comportamiento del Alumno</Label>
                       <p className="text-xs text-muted-foreground">Registra observaciones para seguimiento pedagógico.</p>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="pasatiempos">Pasatiempos</Label>
-                      <Input
-                        id="pasatiempos"
-                        name="pasatiempos"
-                        value={form.pasatiempos}
-                        onChange={handleChange}
-                        placeholder="Ej: Fútbol, dibujo, lectura"
-                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
