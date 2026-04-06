@@ -34,6 +34,9 @@ model Estudiante {
   seccion    String
   encargado  String?
   telefono   String?
+  pasatiempos String?
+  comportamiento String[] @default([])
+  vacunas    String[]     @default([])
   activo     Boolean     @default(true)
   pagos      Pago[]
   talonarios Talonario[]

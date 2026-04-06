@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { MESES } from '@/lib/utils'
+import { COMPORTAMIENTOS_ALUMNO, VACUNAS_ALUMNO_BASE } from '@/lib/estudianteComportamiento'
 
 const prismaCompat = prisma as any
 
@@ -13,6 +14,7 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
+  const q = searchParams.get('q')?.trim()
   const nombre = searchParams.get('nombre')
   const nie = searchParams.get('nie')
   const grado = searchParams.get('grado')
@@ -21,16 +23,31 @@ export async function GET(req: NextRequest) {
   const telefono = searchParams.get('telefono')
   const estado = searchParams.get('estado')
   const anioHeader = searchParams.get('anio')
+  const comportamientoParams = searchParams.getAll('comportamiento')
+
+  const comportamientosValidos = new Set<string>(COMPORTAMIENTOS_ALUMNO)
+  const comportamientoFiltro = Array.from(new Set(
+    comportamientoParams.filter((item) => comportamientosValidos.has(item))
+  ))
 
   const anioActual = anioHeader ? parseInt(anioHeader) : new Date().getFullYear()
 
   const where: any = {
+    ...(q && {
+      OR: [
+        { nombre: { contains: q, mode: 'insensitive' } },
+        { nie: { contains: q, mode: 'insensitive' } },
+        { encargado: { contains: q, mode: 'insensitive' } },
+        { telefono: { contains: q, mode: 'insensitive' } },
+      ],
+    }),
     ...(nombre && { nombre: { contains: nombre, mode: 'insensitive' } }),
     ...(nie && { nie: { contains: nie, mode: 'insensitive' } }),
     ...(grado && { grado: { contains: grado, mode: 'insensitive' } }),
     ...(seccion && { seccion: { contains: seccion, mode: 'insensitive' } }),
     ...(encargado && { encargado: { contains: encargado, mode: 'insensitive' } }),
     ...(telefono && { telefono: { contains: telefono, mode: 'insensitive' } }),
+    ...(comportamientoFiltro.length > 0 && { comportamiento: { hasSome: comportamientoFiltro } }),
   }
 
   // Filtrado por estado (basado en el año seleccionado)
@@ -102,7 +119,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { nombre, nie, grado, seccion, encargado, telefono } = body
+    const { nombre, nie, grado, seccion, encargado, telefono, pasatiempos, comportamiento, vacunas } = body
 
     if (!nombre || !nie || !grado || !seccion) {
       return NextResponse.json({ error: 'Campos requeridos faltantes' }, { status: 400 })
@@ -115,6 +132,31 @@ export async function POST(req: NextRequest) {
     if (telefono && !/^\d{8}$/.test(telefono)) {
       return NextResponse.json({ error: 'El teléfono debe tener exactamente 8 dígitos numéricos' }, { status: 400 })
     }
+
+    const comportamientosValidos = new Set<string>(COMPORTAMIENTOS_ALUMNO)
+    const comportamientoLimpio = Array.isArray(comportamiento)
+      ? Array.from(new Set(comportamiento.filter((item: unknown): item is string => (
+          typeof item === 'string' && comportamientosValidos.has(item)
+        ))))
+      : []
+
+    const pasatiemposLimpio = typeof pasatiempos === 'string' && pasatiempos.trim().length > 0
+      ? pasatiempos.trim()
+      : null
+
+    const vacunasBaseSet = new Set<string>(VACUNAS_ALUMNO_BASE)
+    const vacunasLimpias = Array.isArray(vacunas)
+      ? Array.from(new Set(
+          vacunas
+            .filter((item: unknown): item is string => typeof item === 'string')
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0 && item.length <= 60)
+            .map((item) => {
+              const vacunaBase = Array.from(vacunasBaseSet).find((base) => base.toLowerCase() === item.toLowerCase())
+              return vacunaBase || item
+            })
+        ))
+      : []
 
     const existing = await prisma.estudiante.findUnique({ where: { nie } })
     if (existing) {
@@ -146,6 +188,9 @@ export async function POST(req: NextRequest) {
           seccion,
           encargado,
           telefono,
+          pasatiempos: pasatiemposLimpio,
+          comportamiento: comportamientoLimpio,
+          vacunas: vacunasLimpias,
         },
       })
 

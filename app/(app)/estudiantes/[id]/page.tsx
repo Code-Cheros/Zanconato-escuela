@@ -124,6 +124,35 @@ export default function EstudianteDetailPage() {
                   </div>
                 ))}
               </dl>
+
+              <div className="mt-4 space-y-2 border-t pt-4">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Comportamiento</p>
+                  <p className="text-sm"><span className="text-muted-foreground">Pasatiempos:</span> {estudiante.pasatiempos || '—'}</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {Array.isArray(estudiante.comportamiento) && estudiante.comportamiento.length > 0 ? (
+                    estudiante.comportamiento.map((item: string) => (
+                      <Badge key={item} variant="secondary" className="font-medium">{item}</Badge>
+                    ))
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Sin rasgos registrados</span>
+                  )}
+                </div>
+
+                <div className="space-y-1 pt-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Vacunas</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {Array.isArray(estudiante.vacunas) && estudiante.vacunas.length > 0 ? (
+                      estudiante.vacunas.map((item: string) => (
+                        <Badge key={item} variant="outline" className="font-medium">{item}</Badge>
+                      ))
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Sin vacunas registradas</span>
+                    )}
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 

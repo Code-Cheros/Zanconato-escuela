@@ -10,6 +10,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Toggle } from '@/components/ui/toggle'
+import { COMPORTAMIENTOS_ALUMNO, ComportamientoAlumno } from '@/lib/estudianteComportamiento'
 import {
   Table,
   TableBody,
@@ -56,6 +58,7 @@ export default function EstudiantesPage() {
   const rol = (session?.user as any)?.rol
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([])
   const [search, setSearch] = useState('')
+  const [comportamientoFiltro, setComportamientoFiltro] = useState<ComportamientoAlumno[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -63,8 +66,9 @@ export default function EstudiantesPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-      if (search) params.set('nombre', search)
-      const res = await fetch(`/api/estudiantes?${params}`)
+      if (search.trim()) params.set('q', search.trim())
+      comportamientoFiltro.forEach((item) => params.append('comportamiento', item))
+      const res = await fetch(`/api/estudiantes?${params}`, { cache: 'no-store' })
       const data = await res.json()
       setEstudiantes(Array.isArray(data) ? data : [])
       setCurrentPage(1)
@@ -75,7 +79,17 @@ export default function EstudiantesPage() {
     }
   }
 
-  useEffect(() => { fetchEstudiantes() }, [search])
+  useEffect(() => { fetchEstudiantes() }, [search, comportamientoFiltro])
+
+  const toggleComportamientoFiltro = (valor: ComportamientoAlumno, pressed: boolean) => {
+    setComportamientoFiltro((prev) => {
+      if (pressed) {
+        if (prev.includes(valor)) return prev
+        return [...prev, valor]
+      }
+      return prev.filter((item) => item !== valor)
+    })
+  }
 
   const totalItems = estudiantes.length
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
@@ -129,6 +143,32 @@ export default function EstudiantesPage() {
                     <Plus className="size-4" />
                     Nuevo Estudiante
                   </Link>
+                </Button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+              {COMPORTAMIENTOS_ALUMNO.map((item) => (
+                <Toggle
+                  key={item}
+                  size="sm"
+                  variant="outline"
+                  pressed={comportamientoFiltro.includes(item)}
+                  onPressedChange={(pressed) => toggleComportamientoFiltro(item, pressed)}
+                  className="data-[state=on]:border-primary/50 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+                >
+                  {item}
+                </Toggle>
+              ))}
+              {comportamientoFiltro.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setComportamientoFiltro([])}
+                >
+                  Limpiar
                 </Button>
               )}
             </div>

@@ -113,7 +113,7 @@ function EstudianteActions({ estudianteId }: { estudianteId: string }) {
   )
 }
 
-type Periodo = 'mes' | 'anual' | 'personalizado'
+type Periodo = 'diario' | 'mes' | 'anual' | 'personalizado'
 
 const ITEMS_PER_PAGE = 10
 
@@ -154,7 +154,15 @@ export default function DashboardPage() {
       // Build stats query params based on period
       const statsParams = new URLSearchParams()
       statsParams.set('anio', filterAnio)
-      if (periodo === 'mes') {
+      if (periodo === 'diario') {
+        const now = new Date()
+        const yyyy = now.getFullYear()
+        const mm = String(now.getMonth() + 1).padStart(2, '0')
+        const dd = String(now.getDate()).padStart(2, '0')
+        const hoy = `${yyyy}-${mm}-${dd}`
+        statsParams.set('desde', hoy)
+        statsParams.set('hasta', hoy)
+      } else if (periodo === 'mes') {
         const now = new Date()
         const y = now.getFullYear(), m = now.getMonth()
         const desde = `${y}-${String(m + 1).padStart(2, '0')}-01`
@@ -219,6 +227,19 @@ export default function DashboardPage() {
   const statCards = stats
     ? [
         {
+          label:
+            periodo === 'diario'
+              ? 'Ingresos del Día'
+              : periodo === 'mes'
+                ? 'Ingresos del Mes'
+                : periodo === 'anual'
+                  ? `Ingresos ${filterAnio}`
+                  : 'Ingresos del Período',
+          value: formatCurrency(stats.ingresosMes),
+          icon: TrendingUp,
+          iconWrap: 'bg-amber-500 text-white',
+        },
+        {
           label: 'Total Estudiantes',
           value: stats.totalEstudiantes,
           icon: Users,
@@ -236,12 +257,6 @@ export default function DashboardPage() {
           icon: FileText,
           iconWrap: 'bg-violet-500 text-white',
         },
-        {
-          label: periodo === 'mes' ? 'Ingresos del Mes' : periodo === 'anual' ? `Ingresos ${filterAnio}` : 'Ingresos del Período',
-          value: formatCurrency(stats.ingresosMes),
-          icon: TrendingUp,
-          iconWrap: 'bg-amber-500 text-white',
-        },
       ]
     : []
 
@@ -253,7 +268,7 @@ export default function DashboardPage() {
         {/* Period Selector */}
         <div className="flex flex-wrap items-center gap-1.5">
           <div className="flex items-center gap-1 rounded-lg border bg-card p-0.5">
-            {(['mes', 'anual', 'personalizado'] as Periodo[]).map((p) => (
+            {(['diario', 'mes', 'anual', 'personalizado'] as Periodo[]).map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriodo(p)}
@@ -264,7 +279,7 @@ export default function DashboardPage() {
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                {p === 'mes' ? 'Mes actual' : p === 'anual' ? 'Anual' : 'Personalizado'}
+                {p === 'diario' ? 'Diario' : p === 'mes' ? 'Mes actual' : p === 'anual' ? 'Anual' : 'Personalizado'}
               </button>
             ))}
           </div>

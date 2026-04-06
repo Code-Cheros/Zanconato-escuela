@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { Printer, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { TIPO_PAGO_LABELS } from '@/lib/utils'
+import { MESES, TIPO_PAGO_LABELS } from '@/lib/utils'
 import { hasMoraColegiatura } from '@/lib/mora'
 import { Button } from '@/components/ui/button'
 
@@ -83,6 +83,31 @@ function formatShortDate(date: string | null) {
   }).format(new Date(date))
 }
 
+function getFechaLimitePago(comp: Comprobante, anio: number, diaLimitePago: number) {
+  if (!comp.mes) return new Intl.DateTimeFormat('es-SV', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date())
+
+  const monthIndex = MESES.findIndex(m => m.toUpperCase() === String(comp.mes).toUpperCase())
+  if (monthIndex < 0) return new Intl.DateTimeFormat('es-SV', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date())
+
+  const lastDay = new Date(anio, monthIndex + 1, 0).getDate()
+  const day = Math.min(Math.max(1, diaLimitePago), lastDay)
+  const dueDate = new Date(anio, monthIndex, day)
+
+  return new Intl.DateTimeFormat('es-SV', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(dueDate)
+}
+
 function normalizeText(value: string) {
   return value.trim().replace(/\s+/g, ' ').toUpperCase()
 }
@@ -136,7 +161,8 @@ function SlipCopy({
   const tipo = TIPO_PAGO_LABELS[comp.tipo]
   const concepto = comp.mes ? `${tipo} ${comp.mes} ${anio}` : tipo
   const numeroRecibo = talonarioCode
-  const fecha = showExtras ? formatShortDate(comp.fechaPago) || new Date().toLocaleDateString('es-SV') : new Intl.DateTimeFormat('es-SV', {
+  const fechaLimite = getFechaLimitePago(comp, anio, diaLimitePago)
+  const fecha = showExtras ? fechaLimite : new Intl.DateTimeFormat('es-SV', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

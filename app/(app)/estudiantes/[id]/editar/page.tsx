@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Header from '@/components/layout/Header'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowLeft, Plus, Save } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { GRADOS, SECCIONES } from '@/lib/utils'
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Toggle } from '@/components/ui/toggle'
 import {
   Select,
   SelectContent,
@@ -20,12 +21,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { COMPORTAMIENTOS_ALUMNO, ComportamientoAlumno, VACUNAS_ALUMNO_BASE } from '@/lib/estudianteComportamiento'
 
 export default function EditarEstudiantePage() {
   const { id } = useParams()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [nuevaVacuna, setNuevaVacuna] = useState('')
   const [form, setForm] = useState({
     nombre: '',
     nie: '',
@@ -33,6 +36,9 @@ export default function EditarEstudiantePage() {
     seccion: '',
     encargado: '',
     telefono: '',
+    pasatiempos: '',
+    comportamiento: [] as ComportamientoAlumno[],
+    vacunas: [] as string[],
     activo: true,
   })
 
@@ -48,6 +54,9 @@ export default function EditarEstudiantePage() {
             seccion: d.seccion || '',
             encargado: d.encargado || '',
             telefono: d.telefono || '',
+            pasatiempos: d.pasatiempos || '',
+            comportamiento: Array.isArray(d.comportamiento) ? d.comportamiento : [],
+            vacunas: Array.isArray(d.vacunas) ? d.vacunas : [],
             activo: d.activo ?? true,
           })
         }
@@ -75,6 +84,47 @@ export default function EditarEstudiantePage() {
   const handleSwitchChange = (checked: boolean) => {
     setForm(prev => ({ ...prev, activo: checked }))
   }
+
+  const toggleComportamiento = (valor: ComportamientoAlumno, checked: boolean) => {
+    setForm(prev => {
+      if (checked) {
+        if (prev.comportamiento.includes(valor)) return prev
+        return { ...prev, comportamiento: [...prev.comportamiento, valor] }
+      }
+
+      return {
+        ...prev,
+        comportamiento: prev.comportamiento.filter(item => item !== valor),
+      }
+    })
+  }
+
+  const toggleVacuna = (valor: string, checked: boolean) => {
+    setForm(prev => {
+      if (checked) {
+        if (prev.vacunas.some(v => v.toLowerCase() === valor.toLowerCase())) return prev
+        return { ...prev, vacunas: [...prev.vacunas, valor] }
+      }
+
+      return {
+        ...prev,
+        vacunas: prev.vacunas.filter(item => item !== valor),
+      }
+    })
+  }
+
+  const handleAgregarVacuna = () => {
+    const vacuna = nuevaVacuna.trim()
+    if (!vacuna) return
+
+    setForm(prev => {
+      if (prev.vacunas.some(v => v.toLowerCase() === vacuna.toLowerCase())) return prev
+      return { ...prev, vacunas: [...prev.vacunas, vacuna] }
+    })
+    setNuevaVacuna('')
+  }
+
+  const vacunasDisponibles = Array.from(new Set([...VACUNAS_ALUMNO_BASE, ...form.vacunas]))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -229,6 +279,79 @@ export default function EditarEstudiantePage() {
                       maxLength={8}
                       inputMode="numeric"
                     />
+                  </div>
+
+                  <div className="sm:col-span-2 space-y-3 rounded-lg border bg-muted/20 p-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="pasatiempos" className="text-sm font-semibold">Comportamiento del Alumno</Label>
+                      <p className="text-xs text-muted-foreground">Registra observaciones para seguimiento pedagógico.</p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pasatiempos">Pasatiempos</Label>
+                      <Input
+                        id="pasatiempos"
+                        name="pasatiempos"
+                        value={form.pasatiempos}
+                        onChange={handleChange}
+                        placeholder="Ej: Fútbol, dibujo, lectura"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {COMPORTAMIENTOS_ALUMNO.map(item => (
+                        <Toggle
+                          key={item}
+                          variant="outline"
+                          size="sm"
+                          pressed={form.comportamiento.includes(item)}
+                          onPressedChange={(pressed) => toggleComportamiento(item, pressed)}
+                          className="h-9 justify-start px-3 font-medium data-[state=on]:border-primary/50 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+                        >
+                          {item}
+                        </Toggle>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-2 space-y-3 rounded-lg border bg-muted/20 p-4">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-semibold">Vacunas</Label>
+                      <p className="text-xs text-muted-foreground">Selecciona vacunas aplicadas y agrega una nueva si no existe en el listado.</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {vacunasDisponibles.map(item => (
+                        <Toggle
+                          key={item}
+                          variant="outline"
+                          size="sm"
+                          pressed={form.vacunas.includes(item)}
+                          onPressedChange={(pressed) => toggleVacuna(item, pressed)}
+                          className="h-9 justify-start px-3 font-medium data-[state=on]:border-primary/50 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+                        >
+                          {item}
+                        </Toggle>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Input
+                        value={nuevaVacuna}
+                        onChange={(e) => setNuevaVacuna(e.target.value)}
+                        placeholder="Agregar nueva vacuna"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleAgregarVacuna()
+                          }
+                        }}
+                      />
+                      <Button type="button" variant="outline" className="sm:w-auto" onClick={handleAgregarVacuna}>
+                        <Plus className="size-4" />
+                        Agregar
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="sm:col-span-2 p-3 rounded-lg border bg-muted/30 flex items-center justify-between gap-4">

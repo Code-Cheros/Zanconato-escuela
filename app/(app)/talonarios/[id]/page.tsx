@@ -6,7 +6,7 @@ import Header from '@/components/layout/Header'
 import { ArrowLeft, Printer, CheckCircle, Circle, BookOpen, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { formatCurrency, TIPO_PAGO_LABELS, formatDate } from '@/lib/utils'
+import { formatCurrency, TIPO_PAGO_LABELS, formatDate, MESES } from '@/lib/utils'
 import { hasMoraColegiatura } from '@/lib/mora'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -37,6 +37,22 @@ const typeBadgeClass: Record<string, string> = {
   PAPELERIA: 'border-purple-200 bg-purple-50 text-purple-800',
   COLEGIATURA: 'border-blue-200 bg-blue-50 text-blue-800',
   ALIMENTACION: 'border-green-200 bg-green-50 text-green-800',
+}
+
+function getFechaLimitePago(mes: string | null, anio: number, diaLimitePago: number) {
+  if (!mes) return null
+  const monthIndex = MESES.findIndex(m => m.toUpperCase() === String(mes).toUpperCase())
+  if (monthIndex < 0) return null
+
+  const lastDay = new Date(anio, monthIndex + 1, 0).getDate()
+  const day = Math.min(Math.max(1, diaLimitePago), lastDay)
+  const dueDate = new Date(anio, monthIndex, day)
+
+  return new Intl.DateTimeFormat('es-SV', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(dueDate)
 }
 
 export default function TalonarioDetailPage() {
@@ -214,6 +230,9 @@ export default function TalonarioDetailPage() {
                       montoMora: config?.montoMora,
                       diaLimitePago: config?.diaLimitePago,
                     })
+                    const fechaLimite = c.tipo === 'COLEGIATURA'
+                      ? getFechaLimitePago(c.mes, talonario.anio, Number(config?.diaLimitePago ?? 26))
+                      : null
                     return (
                       <li key={c.id}>
                         <div className="flex items-center justify-between px-5 py-3 gap-4">
@@ -226,6 +245,9 @@ export default function TalonarioDetailPage() {
                               <span className="text-foreground truncate font-medium">
                                 {TIPO_PAGO_LABELS[c.tipo]}{c.mes ? ` — ${c.mes}` : ''}
                               </span>
+                              {!c.pagado && fechaLimite && (
+                                <span className="text-[10px] text-muted-foreground">Fecha límite: {fechaLimite}</span>
+                              )}
                               {!c.pagado && hasMora && (
                                 <span className="text-[10px] text-amber-600 font-medium">+ {formatCurrency(config.montoMora)} de mora</span>
                               )}
