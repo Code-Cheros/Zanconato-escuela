@@ -65,6 +65,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ? pasatiempos.trim()
       : null
 
+    const hasPasatiemposField = Object.prototype.hasOwnProperty.call(body, 'pasatiempos')
+
     const vacunasBaseSet = new Set<string>(VACUNAS_ALUMNO_BASE)
     const vacunasLimpias = Array.isArray(vacunas)
       ? Array.from(new Set(
@@ -88,7 +90,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         seccion, 
         encargado, 
         telefono,
-        pasatiempos: pasatiemposLimpio,
+        ...(hasPasatiemposField ? { pasatiempos: pasatiemposLimpio } : {}),
         comportamiento: comportamientoLimpio,
         vacunas: vacunasLimpias,
         activo: activo !== undefined ? Boolean(activo) : undefined
