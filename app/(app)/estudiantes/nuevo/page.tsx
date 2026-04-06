@@ -1,6 +1,6 @@
 // app/(app)/estudiantes/nuevo/page.tsx
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import { ArrowLeft, Plus, Save, UserPlus, HeartPulse, Activity, AlertTriangle, Baby, Brain, FileText, X, Trash2 } from 'lucide-react'
@@ -73,9 +73,9 @@ export default function NuevoEstudiantePage() {
     }
   }
 
-  useState(() => {
+  useEffect(() => {
     fetchSuggestions()
-  })
+  }, [])
   
   const [form, setForm] = useState({
     nombre: '',
@@ -97,6 +97,7 @@ export default function NuevoEstudiantePage() {
     alergias: [] as string[],
     limitaciones: [] as string[],
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -215,6 +216,19 @@ export default function NuevoEstudiantePage() {
     }
 
     setLoading(true)
+    setErrors({})
+
+    const newErrors: Record<string, string> = {}
+    if (!/^\d{8}$/.test(form.nie)) newErrors.nie = 'El NIE debe tener 8 dígitos numéricos'
+    if (form.telefono && !/^\d{8}$/.test(form.telefono)) newErrors.telefono = 'El teléfono debe tener 8 dígitos numéricos'
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      setLoading(false)
+      toast.error('Revisa los errores en el formulario')
+      return
+    }
+
     try {
       const res = await fetch('/api/estudiantes', {
         method: 'POST',
@@ -353,17 +367,18 @@ export default function NuevoEstudiantePage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="telefono">Teléfono (8 dígitos)</Label>
+                    <Label htmlFor="telefono" className={cn(errors.telefono && "text-destructive")}>Teléfono</Label>
                     <Input
                       id="telefono"
-                      name="telefono"
-                      type="tel"
                       value={form.telefono}
-                      onChange={handleChange}
-                      placeholder="Ej: 71234567"
-                      maxLength={8}
-                      inputMode="numeric"
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 8)
+                        setForm({ ...form, telefono: val })
+                      }}
+                      placeholder="00000000"
+                      className={cn("h-10 bg-background", errors.telefono && "border-destructive focus-visible:ring-destructive")}
                     />
+                    {errors.telefono && <p className="text-[10px] text-destructive font-medium">{errors.telefono}</p>}
                   </div>
 
                   <div className="sm:col-span-2 space-y-4 pt-4 border-t">

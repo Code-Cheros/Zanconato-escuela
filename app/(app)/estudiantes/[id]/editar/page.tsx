@@ -30,7 +30,6 @@ export default function EditarEstudiantePage() {
   const { id } = useParams()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
   const [nuevaVacuna, setNuevaVacuna] = useState('')
   const [nuevaEnfermedad, setNuevaEnfermedad] = useState('')
   const [nuevaAlergia, setNuevaAlergia] = useState('')
@@ -87,7 +86,6 @@ export default function EditarEstudiantePage() {
     comportamiento: [] as ComportamientoAlumno[],
     vacunas: [] as string[],
     activo: true,
-    // Nuevos campos
     descripcion: '',
     embarazo: '',
     embarazoPorQue: '',
@@ -97,6 +95,7 @@ export default function EditarEstudiantePage() {
     alergias: [] as string[],
     limitaciones: [] as string[],
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     fetch(`/api/estudiantes/${id}`)
@@ -246,12 +245,20 @@ export default function EditarEstudiantePage() {
       return
     }
 
-    if (form.telefono && form.telefono.length !== 8) {
-      toast.error('El teléfono debe tener exactamente 8 dígitos')
+    setLoading(true)
+    setErrors({})
+
+    const newErrors: Record<string, string> = {}
+    if (!/^\d{8}$/.test(form.nie)) newErrors.nie = 'El NIE debe tener 8 dígitos numéricos'
+    if (form.telefono && !/^\d{8}$/.test(form.telefono)) newErrors.telefono = 'El teléfono debe tener 8 dígitos numéricos'
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      setLoading(false)
+      toast.error('Revisa los errores en el formulario')
       return
     }
 
-    setSaving(true)
     try {
       const res = await fetch(`/api/estudiantes/${id}`, {
         method: 'PUT',
@@ -268,7 +275,7 @@ export default function EditarEstudiantePage() {
     } catch {
       toast.error('Error de conexión')
     } finally {
-      setSaving(false)
+      setLoading(false)
     }
   }
 
@@ -317,19 +324,19 @@ export default function EditarEstudiantePage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="nie">
-                      NIE (8 dígitos) <span className="text-destructive">*</span>
-                    </Label>
+                    <Label htmlFor="nie" className={cn(errors.nie && "text-destructive")}>NIE</Label>
                     <Input
                       id="nie"
-                      name="nie"
                       value={form.nie}
-                      onChange={handleChange}
-                      className="font-mono"
-                      maxLength={8}
-                      inputMode="numeric"
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 8)
+                        setForm({ ...form, nie: val })
+                      }}
+                      placeholder="00000000"
+                      className={cn("h-10 bg-background", errors.nie && "border-destructive focus-visible:ring-destructive")}
                       required
                     />
+                    {errors.nie && <p className="text-[10px] text-destructive font-medium">{errors.nie}</p>}
                   </div>
 
                   <div className="space-y-1.5">
@@ -391,17 +398,18 @@ export default function EditarEstudiantePage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="telefono">Teléfono (8 dígitos)</Label>
+                    <Label htmlFor="telefono" className={cn(errors.telefono && "text-destructive")}>Teléfono</Label>
                     <Input
                       id="telefono"
-                      name="telefono"
-                      type="tel"
                       value={form.telefono}
-                      onChange={handleChange}
-                      placeholder="Ej: 71234567"
-                      maxLength={8}
-                      inputMode="numeric"
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 8)
+                        setForm({ ...form, telefono: val })
+                      }}
+                      placeholder="00000000"
+                      className={cn("h-10 bg-background", errors.telefono && "border-destructive focus-visible:ring-destructive")}
                     />
+                    {errors.telefono && <p className="text-[10px] text-destructive font-medium">{errors.telefono}</p>}
                   </div>
 
                   <div className="sm:col-span-2 space-y-4 pt-4 border-t">
@@ -653,9 +661,9 @@ export default function EditarEstudiantePage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 pt-2">
-                  <Button type="submit" disabled={saving}>
+                  <Button type="submit" disabled={loading}>
                     <Save className="size-4" />
-                    {saving ? 'Guardando...' : 'Guardar Cambios'}
+                    {loading ? 'Guardando...' : 'Guardar Cambios'}
                   </Button>
                   <Button variant="outline" asChild>
                     <Link href={`/estudiantes/${id}`}>Cancelar</Link>
