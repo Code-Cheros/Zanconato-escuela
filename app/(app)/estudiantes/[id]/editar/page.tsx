@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { GRADOS, SECCIONES, cn } from '@/lib/utils'
+import { GRADOS, SECCIONES, TURNOS, cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -81,6 +81,7 @@ export default function EditarEstudiantePage() {
     nie: '',
     grado: '',
     seccion: '',
+    turno: 'Matutino',
     encargado: '',
     telefono: '',
     comportamiento: [] as ComportamientoAlumno[],
@@ -107,6 +108,7 @@ export default function EditarEstudiantePage() {
             nie: d.nie || '',
             grado: d.grado || '',
             seccion: d.seccion || '',
+            turno: d.turno || 'Matutino',
             encargado: d.encargado || '',
             telefono: d.telefono || '',
             comportamiento: Array.isArray(d.comportamiento) ? d.comportamiento : [],
@@ -358,6 +360,21 @@ export default function EditarEstudiantePage() {
                         {SECCIONES.map(s => (
                           <SelectItem key={s} value={s}>{s}</SelectItem>
                         ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="turno" className="text-sm font-medium">Turno</Label>
+                    <Select 
+                      value={form.turno} 
+                      onValueChange={(v) => setForm({ ...form, turno: v })}
+                    >
+                      <SelectTrigger id="turno" className="h-10 bg-background transition-all focus:ring-2 focus:ring-primary/20">
+                        <SelectValue placeholder="Seleccionar turno" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TURNOS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

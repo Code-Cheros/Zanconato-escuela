@@ -45,7 +45,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params
     const body = await req.json()
     const { 
-      nombre, nie, grado, seccion, encargado, telefono, pasatiempos, comportamiento, vacunas, activo,
+      nombre, nie, grado, seccion, turno, encargado, telefono, pasatiempos, comportamiento, vacunas, activo,
       descripcion, embarazo, embarazoPorQue, tipoParto, problemasAprendizaje, enfermedades, alergias, limitaciones
     } = body
 
@@ -91,6 +91,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         nie, 
         grado, 
         seccion, 
+        turno,
         encargado, 
         telefono,
         ...(hasPasatiemposField ? { pasatiempos: pasatiemposLimpio } : {}),

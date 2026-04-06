@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
   const seccion = searchParams.get('seccion')
   const encargado = searchParams.get('encargado')
   const telefono = searchParams.get('telefono')
+  const turno = searchParams.get('turno')
   const estado = searchParams.get('estado')
   const anioHeader = searchParams.get('anio')
   const desde = searchParams.get('desde')
@@ -49,6 +50,7 @@ export async function GET(req: NextRequest) {
     ...(seccion && { seccion: { contains: seccion, mode: 'insensitive' } }),
     ...(encargado && { encargado: { contains: encargado, mode: 'insensitive' } }),
     ...(telefono && { telefono: { contains: telefono, mode: 'insensitive' } }),
+    ...(turno && { turno: { equals: turno } }),
     ...(comportamientoFiltro.length > 0 && { comportamiento: { hasSome: comportamientoFiltro } }),
   }
 
@@ -129,7 +131,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const { 
-      nombre, nie, grado, seccion, encargado, telefono, pasatiempos, comportamiento, vacunas,
+      nombre, nie, grado, seccion, turno, encargado, telefono, pasatiempos, comportamiento, vacunas,
       descripcion, embarazo, embarazoPorQue, tipoParto, problemasAprendizaje, enfermedades, alergias, limitaciones
     } = body
 
@@ -198,6 +200,7 @@ export async function POST(req: NextRequest) {
           nie,
           grado,
           seccion,
+          turno,
           encargado,
           telefono,
           pasatiempos: pasatiemposLimpio,
@@ -220,7 +223,8 @@ export async function POST(req: NextRequest) {
           estudianteId: estudiante.id,
           anio: anioActual,
           grado,
-          seccion
+          seccion,
+          turno
         },
       })
 

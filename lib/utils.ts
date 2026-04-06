@@ -21,6 +21,8 @@ export const GRADOS = [
 
 export const SECCIONES = ['A', 'B', 'C', 'D', 'E']
 
+export const TURNOS = ['Matutino', 'Vespertino', 'Nocturno']
+
 export const TIPO_PAGO_LABELS: Record<string, string> = {
   MATRICULA: 'Matrícula',
   PAPELERIA: 'Papelería',

@@ -7,7 +7,7 @@ import { ArrowLeft, Plus, Save, UserPlus, HeartPulse, Activity, AlertTriangle, B
 import { Textarea } from '@/components/ui/textarea'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { GRADOS, SECCIONES, cn } from '@/lib/utils'
+import { GRADOS, SECCIONES, TURNOS, cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -81,7 +81,8 @@ export default function NuevoEstudiantePage() {
     nombre: '',
     nie: '',
     grado: '',
-    seccion: '',
+    seccion: 'A',
+    turno: 'Matutino',
     encargado: '',
     telefono: '',
     comportamiento: [] as ComportamientoAlumno[],
@@ -325,6 +326,21 @@ export default function NuevoEstudiantePage() {
                     </Select>
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="turno" className="text-sm font-medium">Turno</Label>
+                    <Select 
+                      value={form.turno} 
+                      onValueChange={(v) => setForm({ ...form, turno: v })}
+                    >
+                      <SelectTrigger id="turno" className="h-10 bg-background transition-all focus:ring-2 focus:ring-primary/20">
+                        <SelectValue placeholder="Seleccionar turno" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TURNOS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="space-y-1.5">
                     <Label htmlFor="encargado">Encargado / Padre de familia</Label>
                     <Input
@@ -523,7 +539,12 @@ export default function NuevoEstudiantePage() {
                   <div className="sm:col-span-2 space-y-3 rounded-lg border bg-muted/20 p-4">
                     <div className="space-y-1">
                       <Label className="text-sm font-semibold">Comportamiento del Alumno</Label>
-                      <p className="text-xs text-muted-foreground">Registra observaciones para seguimiento pedagógico.</p>
+                      <p className="text-sm text-muted-foreground mt-1">Completa la información básica del alumno para iniciar su expediente.</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-3 py-1 text-xs font-semibold">
+                        Periodo {new Date().getFullYear()}
+                      </Badge>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

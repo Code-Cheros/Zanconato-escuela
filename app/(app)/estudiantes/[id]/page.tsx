@@ -114,6 +114,7 @@ export default function EstudianteDetailPage() {
                   ['NIE', estudiante.nie],
                   ['Grado', estudiante.grado],
                   ['Sección', estudiante.seccion],
+                  ['Turno', estudiante.turno || 'Matutino'],
                   ['Encargado', estudiante.encargado || '—'],
                   ['Teléfono', estudiante.telefono || '—'],
                   ['Matriculado', formatDate(estudiante.creadoEn)],

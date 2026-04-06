@@ -39,6 +39,7 @@ model Estudiante {
   pasatiempos          String?
   problemasAprendizaje String?
   tipoParto            String?
+  turno                String?       @default("Matutino")
   vacunas              String[]      @default([])
   comprobantes         Comprobante[]
   pagos                Pago[]
@@ -51,6 +52,7 @@ model Talonario {
   anio         Int
   grado        String?
   seccion      String?
+  turno        String?
   creadoEn     DateTime      @default(now())
   comprobantes Comprobante[]
   estudiante   Estudiante    @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
