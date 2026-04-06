@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { MESES } from '@/lib/utils'
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -60,18 +61,23 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
+  const mesesRelativos = MESES.slice(0, fechaHasta.getMonth() + 1)
+
   const estudiantesAlDia = await prisma.estudiante.count({
     where: {
       talonarios: {
         some: {
           anio: anioActual,
           comprobantes: {
-            every: {
-              OR: [
-                { pagado: true },
-                { tipo: { not: 'COLEGIATURA' } },
-              ],
+            none: { 
+              tipo: 'COLEGIATURA', 
+              pagado: false,
+              mes: { in: mesesRelativos }
             },
+            some: { 
+              tipo: 'COLEGIATURA',
+              mes: { in: mesesRelativos }
+            }
           },
         },
       },

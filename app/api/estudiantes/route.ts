@@ -23,6 +23,8 @@ export async function GET(req: NextRequest) {
   const telefono = searchParams.get('telefono')
   const estado = searchParams.get('estado')
   const anioHeader = searchParams.get('anio')
+  const desde = searchParams.get('desde')
+  const hasta = searchParams.get('hasta')
   const comportamientoParams = searchParams.getAll('comportamiento')
 
   const comportamientosValidos = new Set<string>(COMPORTAMIENTOS_ALUMNO)
@@ -50,14 +52,19 @@ export async function GET(req: NextRequest) {
     ...(comportamientoFiltro.length > 0 && { comportamiento: { hasSome: comportamientoFiltro } }),
   }
 
-  // Filtrado por estado (basado en el año seleccionado)
+  // Determinar meses relevantes hasta la fecha 'hasta' (o hoy por defecto)
+  const fechaReferencia = hasta ? new Date(hasta + 'T23:59:59') : new Date()
+  const mesesRelativos = MESES.slice(0, fechaReferencia.getMonth() + 1)
+
+  // Filtrado por estado (basado en el año seleccionado y periodo)
+  // Filtrado por estado (basado en el año seleccionado y periodo)
   if (estado === 'AL_DIA') {
     where.talonarios = {
       some: {
         anio: anioActual,
         comprobantes: {
-          none: { tipo: 'COLEGIATURA', pagado: false },
-          some: { tipo: 'COLEGIATURA' }
+          none: { tipo: 'COLEGIATURA', pagado: false, mes: { in: mesesRelativos } },
+          some: { tipo: 'COLEGIATURA', mes: { in: mesesRelativos } }
         }
       }
     }
@@ -66,8 +73,8 @@ export async function GET(req: NextRequest) {
       some: {
         anio: anioActual,
         comprobantes: {
-          every: { tipo: 'COLEGIATURA', pagado: false },
-          some: { tipo: 'COLEGIATURA' }
+          none: { tipo: 'COLEGIATURA', pagado: true, mes: { in: mesesRelativos } },
+          some: { tipo: 'COLEGIATURA', mes: { in: mesesRelativos } }
         }
       }
     }
@@ -75,13 +82,15 @@ export async function GET(req: NextRequest) {
     where.talonarios = {
       some: {
         anio: anioActual,
-        comprobantes: {
-          some: { AND: [{ tipo: 'COLEGIATURA' }, { pagado: true }] }
-        },
         AND: [
           {
             comprobantes: {
-              some: { AND: [{ tipo: 'COLEGIATURA' }, { pagado: false }] }
+              some: { tipo: 'COLEGIATURA', pagado: true, mes: { in: mesesRelativos } }
+            }
+          },
+          {
+            comprobantes: {
+              some: { tipo: 'COLEGIATURA', pagado: false, mes: { in: mesesRelativos } }
             }
           }
         ]

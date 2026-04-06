@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Header from '@/components/layout/Header'
 import { Users, CheckCircle, FileText, TrendingUp, Plus, Search, Eye, CreditCard, Filter, X, Calendar } from 'lucide-react'
-import { formatCurrency, GRADOS, SECCIONES } from '@/lib/utils'
+import { formatCurrency, GRADOS, SECCIONES, MESES } from '@/lib/utils'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import {
@@ -58,10 +58,10 @@ interface Estudiante {
   activo: boolean
   encargado: string | null
   telefono: string | null
-  talonarios: Array<{ comprobantes: Array<{ pagado: boolean; tipo: string }> }>
+  talonarios: Array<{ comprobantes: Array<{ pagado: boolean; tipo: string; mes: string | null }> }>
 }
 
-function EstadoBadge({ talonarios, activo }: { talonarios: Estudiante['talonarios'], activo?: boolean }) {
+function EstadoBadge({ talonarios, activo, hasta }: { talonarios: Estudiante['talonarios'], activo?: boolean, hasta?: string }) {
   if (activo === false) {
     return <Badge variant="destructive" className="bg-red-500/10 text-red-700 border-red-200">Inactivo</Badge>
   }
@@ -70,9 +70,18 @@ function EstadoBadge({ talonarios, activo }: { talonarios: Estudiante['talonario
 
   const comprobantes = talonario.comprobantes
   const colegiaturas = comprobantes.filter(c => c.tipo === 'COLEGIATURA')
-  const pagadas = colegiaturas.filter(c => c.pagado).length
+  
+  // Si hay una fecha 'hasta', solo consideramos los meses hasta esa fecha
+  let colegiaturasRelevantes = colegiaturas
+  if (hasta) {
+    const fechaRef = new Date(hasta + 'T23:59:59')
+    const mesesRelativos = MESES.slice(0, fechaRef.getMonth() + 1)
+    colegiaturasRelevantes = colegiaturas.filter(c => c.tipo === 'COLEGIATURA' && c.mes && mesesRelativos.includes(c.mes))
+  }
 
-  if (pagadas === colegiaturas.length && colegiaturas.length > 0) {
+  const pagadas = colegiaturasRelevantes.filter(c => c.pagado).length
+
+  if (pagadas === colegiaturasRelevantes.length && colegiaturasRelevantes.length > 0) {
     return (
       <Badge
         className={cn(
@@ -89,7 +98,7 @@ function EstadoBadge({ talonarios, activo }: { talonarios: Estudiante['talonario
   }
   return (
     <Badge variant="outline">
-      {pagadas}/{colegiaturas.length} pagadas
+      {pagadas}/{colegiaturasRelevantes.length} pagadas
     </Badge>
   )
 }
@@ -177,6 +186,10 @@ export default function DashboardPage() {
         statsParams.set('desde', customDesde)
         statsParams.set('hasta', customHasta)
       }
+
+      // Sync student API with the same period
+      if (statsParams.has('desde')) params.set('desde', statsParams.get('desde')!)
+      if (statsParams.has('hasta')) params.set('hasta', statsParams.get('hasta')!)
 
       const [statsRes, estRes] = await Promise.all([
         fetch(`/api/dashboard/stats?${statsParams.toString()}`),
@@ -352,7 +365,28 @@ export default function DashboardPage() {
         <Card className="min-w-0 py-0">
           <CardHeader className="flex flex-col gap-3 border-b px-4 py-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle className="text-base">Gestión de Estudiantes</CardTitle>
+              <div className="flex flex-col gap-1">
+                <CardTitle className="text-base">Gestión de Estudiantes</CardTitle>
+                <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                  <Calendar className="size-3" />
+                  Estado calculado hasta: {' '}
+                  <span className="text-foreground">
+                    {(() => {
+                      let monthIndex = new Date().getMonth()
+                      if (periodo === 'diario') {
+                        monthIndex = new Date().getMonth()
+                      } else if (periodo === 'mes') {
+                        monthIndex = new Date().getMonth()
+                      } else if (periodo === 'anual') {
+                        monthIndex = 11
+                      } else if (periodo === 'personalizado' && customHasta) {
+                        monthIndex = new Date(customHasta + 'T23:59:59').getMonth()
+                      }
+                      return `${MESES[monthIndex]} ${filterAnio}`
+                    })()}
+                  </span>
+                </p>
+              </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Button 
                   variant={showFilters ? "secondary" : "outline"} 
@@ -556,7 +590,23 @@ export default function DashboardPage() {
                         {est.telefono || '—'}
                       </TableCell>
                       <TableCell className="px-3 py-2">
-                        <EstadoBadge talonarios={est.talonarios} activo={est.activo} />
+                        <EstadoBadge 
+                          talonarios={est.talonarios} 
+                          activo={est.activo} 
+                          hasta={(() => {
+                            if (periodo === 'diario') {
+                              return new Date().toISOString().split('T')[0]
+                            } else if (periodo === 'mes') {
+                              const now = new Date()
+                              return new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+                            } else if (periodo === 'anual') {
+                              return `${filterAnio}-12-31`
+                            } else if (periodo === 'personalizado') {
+                              return customHasta
+                            }
+                            return undefined
+                          })()}
+                        />
                       </TableCell>
                       <TableCell className="px-3 py-2 text-right">
                         <div className="flex justify-end">
@@ -604,7 +654,23 @@ export default function DashboardPage() {
                           <p className="font-medium leading-snug">{est.nombre}</p>
                           <p className="mt-0.5 font-mono text-xs text-muted-foreground">{est.nie}</p>
                         </div>
-                        <EstadoBadge talonarios={est.talonarios} activo={est.activo} />
+                        <EstadoBadge 
+                          talonarios={est.talonarios} 
+                          activo={est.activo} 
+                          hasta={(() => {
+                            if (periodo === 'diario') {
+                              return new Date().toISOString().split('T')[0]
+                            } else if (periodo === 'mes') {
+                              const now = new Date()
+                              return new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+                            } else if (periodo === 'anual') {
+                              return `${filterAnio}-12-31`
+                            } else if (periodo === 'personalizado') {
+                              return customHasta
+                            }
+                            return undefined
+                          })()}
+                        />
                       </div>
                       <dl className="grid gap-1.5 text-sm text-muted-foreground">
                         <div className="flex flex-wrap gap-x-2">
