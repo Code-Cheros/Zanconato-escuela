@@ -3,18 +3,19 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Header from '@/components/layout/Header'
-import { ArrowLeft, Plus, Save, HeartPulse, Activity, AlertTriangle, Baby, Brain, FileText, X } from 'lucide-react'
+import { ArrowLeft, Plus, Save, HeartPulse, Activity, AlertTriangle, Baby, Brain, FileText, X, Trash2 } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { GRADOS, SECCIONES } from '@/lib/utils'
+import { GRADOS, SECCIONES, cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Toggle } from '@/components/ui/toggle'
+import { Separator } from '@/components/ui/separator'
 import {
   Select,
   SelectContent,
@@ -34,6 +35,47 @@ export default function EditarEstudiantePage() {
   const [nuevaEnfermedad, setNuevaEnfermedad] = useState('')
   const [nuevaAlergia, setNuevaAlergia] = useState('')
   const [nuevaLimitacion, setNuevaLimitacion] = useState('')
+  const [mediSuggestions, setMediSuggestions] = useState({
+    enfermedades: [] as string[],
+    alergias: [] as string[],
+    limitaciones: [] as string[]
+  })
+
+  const fetchSuggestions = async () => {
+    try {
+      const res = await fetch('/api/estudiantes/sugerencias-medicas')
+      const data = await res.json()
+      if (res.ok) setMediSuggestions(data)
+    } catch { /* Silent */ }
+  }
+
+  const [confirmDelete, setConfirmDelete] = useState<{ tipo: string, valor: string } | null>(null)
+
+  const handleEliminarSugerencia = async (tipo: string, valor: string) => {
+    // Si no está confirmando este elemento específico, marcarlo para confirmación
+    if (confirmDelete?.valor !== valor || confirmDelete?.tipo !== tipo) {
+      setConfirmDelete({ tipo, valor })
+      // Auto-cancelar después de 3 segundos
+      setTimeout(() => setConfirmDelete(prev => (prev?.valor === valor ? null : prev)), 3000)
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/estudiantes/sugerencias-medicas?tipo=${tipo}&valor=${encodeURIComponent(valor)}`, {
+        method: 'DELETE'
+      })
+      if (res.ok) {
+        toast.success('Sugerencia eliminada del historial')
+        setConfirmDelete(null)
+        fetchSuggestions()
+      } else {
+        toast.error('Error al eliminar')
+      }
+    } catch {
+      toast.error('Error de conexión')
+    }
+  }
+
   const [form, setForm] = useState({
     nombre: '',
     nie: '',
@@ -83,6 +125,7 @@ export default function EditarEstudiantePage() {
         setLoading(false)
       })
       .catch(() => { toast.error('Error cargando datos'); setLoading(false) })
+    fetchSuggestions()
   }, [id])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -393,13 +436,19 @@ export default function EditarEstudiantePage() {
 
                       <div className="space-y-1.5">
                         <Label htmlFor="tipoParto">Tipo de parto</Label>
-                        <Input
-                          id="tipoParto"
-                          name="tipoParto"
-                          value={form.tipoParto}
-                          onChange={(e) => setForm({ ...form, tipoParto: e.target.value })}
-                          placeholder="Normal, cesárea..."
-                        />
+                        <Select 
+                          value={form.tipoParto} 
+                          onValueChange={(v) => setForm({ ...form, tipoParto: v })}
+                        >
+                          <SelectTrigger id="tipoParto" className="w-full">
+                            <SelectValue placeholder="Seleccionar tipo..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Natural">Natural</SelectItem>
+                            <SelectItem value="Cesárea">Cesárea</SelectItem>
+                            <SelectItem value="Otros">Otros</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="space-y-1.5">
@@ -416,52 +465,91 @@ export default function EditarEstudiantePage() {
                         />
                       </div>
 
-                      {/* Listas Dinámicas */}
+                      {/* Listas Dinámicas con Sugerencias Ágiles */}
                       {[
-                        { label: 'Enfermedades', field: 'enfermedades', state: nuevaEnfermedad, setState: setNuevaEnfermedad, handler: handleAgregarEnfermedad, icon: Activity },
-                        { label: 'Alergias', field: 'alergias', state: nuevaAlergia, setState: setNuevaAlergia, handler: handleAgregarAlergia, icon: AlertTriangle },
-                        { label: 'Limitaciones', field: 'limitaciones', state: nuevaLimitacion, setState: setNuevaLimitacion, handler: handleAgregarLimitacion, icon: Activity }
+                        { label: 'Enfermedades', field: 'enfermedades', state: nuevaEnfermedad, setState: setNuevaEnfermedad, handler: handleAgregarEnfermedad, icon: Activity, suggestions: mediSuggestions.enfermedades },
+                        { label: 'Alergias', field: 'alergias', state: nuevaAlergia, setState: setNuevaAlergia, handler: handleAgregarAlergia, icon: AlertTriangle, suggestions: mediSuggestions.alergias },
+                        { label: 'Limitaciones', field: 'limitaciones', state: nuevaLimitacion, setState: setNuevaLimitacion, handler: handleAgregarLimitacion, icon: Activity, suggestions: mediSuggestions.limitaciones }
                       ].map((list) => (
                         <div key={list.field} className="sm:col-span-2 space-y-3 rounded-lg border bg-muted/20 p-4">
                           <div className="space-y-1">
                             <Label className="text-sm font-semibold flex items-center gap-1.5">
-                              <list.icon className="size-3.5" />
+                              <list.icon className="size-3.5 text-primary" />
                               {list.label}
                             </Label>
-                            <p className="text-xs text-muted-foreground">Agrega ítems relevantes si aplica.</p>
                           </div>
 
-                          <div className="flex flex-wrap gap-2">
-                            {form[list.field as keyof typeof form] instanceof Array && (form[list.field as keyof typeof form] as string[]).map(item => (
-                              <Badge key={item} variant="secondary" className="gap-1 px-2 py-1 pr-1 font-medium">
+                          <div className="flex flex-wrap gap-2 min-h-[1.5rem]">
+                            {(form[list.field as keyof typeof form] as string[]).map(item => (
+                              <Badge key={item} variant="secondary" className="gap-1 px-2 py-1 pr-1 font-medium bg-background border shadow-sm">
                                 {item}
-                                <button
-                                  type="button"
-                                  onClick={() => removerItem(list.field as any, item)}
-                                  className="rounded-full p-0.5 hover:bg-muted-foreground/20 transition-colors"
-                                >
+                                <button type="button" onClick={() => removerItem(list.field as any, item)} className="rounded-full p-0.5 hover:bg-destructive/10 hover:text-destructive">
                                   <X className="size-3" />
                                 </button>
                               </Badge>
                             ))}
+                            {(form[list.field as keyof typeof form] as string[]).length === 0 && <span className="text-[10px] text-muted-foreground italic">Ninguno registrado</span>}
                           </div>
 
-                          <div className="flex flex-col gap-2 sm:flex-row">
-                            <Input
-                              value={list.state}
-                              onChange={(e) => list.setState(e.target.value)}
-                              placeholder={`Agregar ${list.label.toLowerCase()}...`}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault()
-                                  list.handler()
-                                }
-                              }}
-                            />
-                            <Button type="button" variant="outline" size="sm" className="sm:w-auto" onClick={list.handler}>
-                              <Plus className="size-4" />
-                              Agregar
-                            </Button>
+                          <div className="space-y-2">
+                             <div className="flex gap-2">
+                               <Input
+                                 value={list.state}
+                                 onChange={(e) => list.setState(e.target.value)}
+                                 placeholder={`Escribe para agregar ${list.label.toLowerCase()}...`}
+                                 className="h-9 bg-background"
+                                 onKeyDown={(e) => {
+                                   if (e.key === 'Enter') {
+                                     e.preventDefault()
+                                     list.handler()
+                                   }
+                                 }}
+                               />
+                               <Button size="icon-sm" type="button" onClick={list.handler} variant="outline">
+                                 <Plus className="size-4" />
+                               </Button>
+                             </div>
+
+                             {list.suggestions.length > 0 && (
+                               <div className="flex flex-wrap gap-1.5 pt-1">
+                                 <span className="text-[10px] text-muted-foreground flex items-center shrink-0">Historial:</span>
+                                 {list.suggestions
+                                   .filter(s => !(form[list.field as keyof typeof form] as string[]).includes(s))
+                                   .slice(0, 8)
+                                   .map(s => (
+                                     <div key={s} className="group flex items-center bg-primary/5 text-primary border border-primary/20 rounded-full pl-2 pr-1 py-0.5 hover:bg-primary/10 transition-colors gap-1">
+                                       <button
+                                         type="button"
+                                         onClick={() => {
+                                           setForm(prev => ({
+                                             ...prev,
+                                             [list.field]: Array.from(new Set([...(prev[list.field as keyof typeof form] as string[]), s]))
+                                           }))
+                                         }}
+                                         className="text-[10px] font-medium"
+                                       >
+                                         {s}
+                                       </button>
+                                       <button 
+                                         type="button" 
+                                         onClick={() => handleEliminarSugerencia(list.field, s)}
+                                         className={cn(
+                                           "transition-all duration-200",
+                                           confirmDelete?.valor === s && confirmDelete?.tipo === list.field
+                                             ? "opacity-100 text-destructive scale-110" 
+                                             : "opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                                         )}
+                                       >
+                                         {confirmDelete?.valor === s && confirmDelete?.tipo === list.field 
+                                           ? <Trash2 className="size-3" /> 
+                                           : <X className="size-2.5" />
+                                         }
+                                       </button>
+                                     </div>
+                                   ))
+                                 }
+                               </div>
+                             )}
                           </div>
                         </div>
                       ))}
