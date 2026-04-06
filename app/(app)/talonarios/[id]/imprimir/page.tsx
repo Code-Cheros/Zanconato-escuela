@@ -335,7 +335,9 @@ export default function ImprimirTalonarioPage() {
   if (loading) return <div className="flex items-center justify-center min-h-screen text-muted-foreground">Cargando...</div>
   if (!talonario || (talonario as any).error) return <div className="p-8 text-center text-muted-foreground">No encontrado</div>
 
-  const comps = [...talonario.comprobantes].sort((a, b) => a.orden - b.orden)
+  const comps = [...talonario.comprobantes]
+    .filter(c => c.tipo === 'MATRICULA' || c.tipo === 'COLEGIATURA')
+    .sort((a, b) => a.orden - b.orden)
   const pages: Comprobante[][] = []
   for (let i = 0; i < comps.length; i += 4) {
     pages.push(comps.slice(i, i + 4))
