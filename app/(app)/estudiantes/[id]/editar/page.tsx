@@ -74,6 +74,11 @@ export default function EditarEstudiantePage() {
       }
       return
     }
+    if (name === 'nombre' || name === 'encargado') {
+      const onlyLetters = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ ]/g, '')
+      setForm({ ...form, [name]: onlyLetters })
+      return
+    }
     setForm({ ...form, [name]: value })
   }
 
