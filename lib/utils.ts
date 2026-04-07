@@ -23,6 +23,37 @@ export const SECCIONES = ['A', 'B', 'C', 'D', 'E']
 
 export const TURNOS = ['Matutino', 'Vespertino', 'Nocturno']
 
+export const RELIGIONES_OPCIONES = [
+  'Católica',
+  'Evangélica',
+  'Testigo de Jehová',
+  'Mormón',
+  'Judaísmo',
+  'Islam',
+  'Otra',
+  'Sin especificar',
+] as const
+
+export const ESTADOS_CIVILES_OPCIONES = [
+  'Soltero',
+  'Casado',
+  'Unión libre',
+  'Divorciado',
+  'Viudo',
+] as const
+
+export const DOCUMENTOS_MATRICULA = [
+  'Ficha integral',
+  'Fé de bautismo',
+  'Certificado',
+  'Partida de nacimiento',
+  'Const. servicio social',
+  'Fotografía',
+  'Solvencia económica',
+  'Const. conducta',
+  'Matrícula oficial',
+] as const
+
 export const TIPO_PAGO_LABELS: Record<string, string> = {
   MATRICULA: 'Matrícula',
   PAPELERIA: 'Papelería',
