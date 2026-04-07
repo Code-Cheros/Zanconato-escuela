@@ -20,30 +20,62 @@ model Usuario {
 }
 
 model Estudiante {
-  id                   String        @id @default(cuid())
-  nombre               String
-  nie                  String        @unique
-  grado                String
-  seccion              String
-  encargado            String?
-  telefono             String?
-  creadoEn             DateTime      @default(now())
-  activo               Boolean       @default(true)
-  alergias             String[]      @default([])
-  comportamiento       String[]      @default([])
-  descripcion          String?
-  embarazo             String?
-  embarazoPorQue       String?
-  enfermedades         String[]      @default([])
-  limitaciones         String[]      @default([])
-  pasatiempos          String?
-  problemasAprendizaje String?
-  tipoParto            String?
-  turno                String?       @default("Matutino")
-  vacunas              String[]      @default([])
-  comprobantes         Comprobante[]
-  pagos                Pago[]
-  talonarios           Talonario[]
+  id                      String        @id @default(cuid())
+  nombre                  String
+  nie                     String        @unique
+  grado                   String
+  seccion                 String
+  encargado               String?
+  telefono                String?
+  creadoEn                DateTime      @default(now())
+  activo                  Boolean       @default(true)
+  alergias                String[]      @default([])
+  comportamiento          String[]      @default([])
+  descripcion             String?
+  embarazo                String?
+  embarazoPorQue          String?
+  enfermedades            String[]      @default([])
+  limitaciones            String[]      @default([])
+  pasatiempos             String?
+  problemasAprendizaje    String?
+  tipoParto               String?
+  turno                   String?       @default("Matutino")
+  vacunas                 String[]      @default([])
+  nombres                 String?
+  primerApellido          String?
+  segundoApellido         String?
+  lugarNacimiento         String?
+  fechaNacimiento         DateTime?
+  correo                  String?
+  religion                String?
+  estadoCivil             String?
+  estudioParvularia       Boolean       @default(false)
+  repiteGrado             Boolean       @default(false)
+  transporte              String?
+  distancia               String?
+  tallaPantalon           String?
+  tallaCamisa             String?
+  tallaZapatos            String?
+  direccion               String?
+  departamento            String?
+  municipio               String?
+  canton                  String?
+  viveCon                 String?
+  dependeEconomicamente   String?
+  miembrosFamilia         String?
+  estudianteTrabaja       Boolean       @default(false)
+  tieneHijos              Boolean       @default(false)
+  padreProfesion          String?
+  padreTelefonoTrabajo    String?
+  padreDireccion          String?
+  padreDepartamento       String?
+  padreMunicipio          String?
+  padreCanton             String?
+  documentosEntregados    String[]      @default([])
+  fotoDataUrl             String?       @db.Text
+  comprobantes            Comprobante[]
+  pagos                   Pago[]
+  talonarios              Talonario[]
 }
 
 model Talonario {
