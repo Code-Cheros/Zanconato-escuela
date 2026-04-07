@@ -315,7 +315,7 @@ export default function NuevoEstudiantePage() {
       <Header title="Matricular Estudiante" subtitle="Registro de nuevo estudiante" />
 
       <div className="flex-1 p-4 sm:p-6">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-full mx-auto">
           <Button variant="ghost" size="sm" className="mb-6 gap-1.5 px-0 text-muted-foreground hover:text-foreground" asChild>
             <Link href="/estudiantes">
               <ArrowLeft className="size-4" />
@@ -367,7 +367,7 @@ export default function NuevoEstudiantePage() {
                     <Label htmlFor="primerApellido" className={cn(errors.primerApellido && 'text-destructive')}>
                       Primer apellido <span className="text-destructive">*</span>
                     </Label>
-                    <p className="text-[10px] text-muted-foreground">Completá este o el segundo apellido (o ambos).</p>
+                    {/* <p className="text-[10px] text-muted-foreground">Completá este o el segundo apellido (o ambos).</p> */}
                     <Input
                       id="primerApellido"
                       name="primerApellido"
@@ -760,7 +760,7 @@ export default function NuevoEstudiantePage() {
 
                   <div className="sm:col-span-2 space-y-3 rounded-lg border bg-muted/15 p-4">
                     <div className="flex items-center gap-2 text-foreground">
-                      <ClipboardList className="size-4 text-primary" />
+                      <ClipboardList className="size-4 text-primary dark:text-white" />
                       <p className="text-sm font-semibold">Documentos entregados</p>
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -956,7 +956,7 @@ export default function NuevoEstudiantePage() {
                       <p className="text-sm text-muted-foreground mt-1">Completa la información básica del alumno para iniciar su expediente.</p>
                     </div>
                     <div className="flex gap-2">
-                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-3 py-1 text-xs font-semibold">
+                      <Badge variant="outline" className="bg-primary/5 text-primary dark:text-white border-primary/20 px-3 py-1 text-xs font-semibold">
                         Periodo {new Date().getFullYear()}
                       </Badge>
                     </div>
@@ -1018,9 +1018,9 @@ export default function NuevoEstudiantePage() {
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-primary">
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-primary dark:text-white">
                   <p className="font-medium mb-1">Al guardar se generará automáticamente:</p>
-                  <ul className="space-y-1 text-xs text-primary/80">
+                  <ul className="space-y-1 text-xs text-primary dark:text-white">
                     <li>• Usuario temporal con email: estudiante.{form.nie?.toLowerCase() || 'nie'}@zaconato.edu.sv</li>
                     <li>• Talonario del año {new Date().getFullYear()} con todos los comprobantes</li>
                     <li>• Comprobantes: Matrícula, Papelería, 10 Colegiaturas, 10 Alimentaciones</li>
