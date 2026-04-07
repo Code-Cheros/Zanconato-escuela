@@ -58,8 +58,8 @@ export async function GET(req: NextRequest) {
   const fechaReferencia = hasta ? new Date(hasta + 'T23:59:59') : new Date()
   const mesesRelativos = MESES.slice(0, fechaReferencia.getMonth() + 1)
 
-  // Filtrado por estado (basado en el año seleccionado y periodo)
-  // Filtrado por estado (basado en el año seleccionado y periodo)
+  // Filtrado por estado (basado en el aÃ±o seleccionado y periodo)
+  // Filtrado por estado (basado en el aÃ±o seleccionado y periodo)
   if (estado === 'AL_DIA') {
     where.talonarios = {
       some: {
@@ -138,10 +138,9 @@ export async function POST(req: NextRequest) {
       turno,
       encargado,
       telefono,
-      pasatiempos,
-      comportamiento,
-      vacunas,
-      descripcion,
+        comportamiento,
+        vacunas,
+        descripcion,
       embarazo,
       embarazoPorQue,
       tipoParto,
@@ -198,7 +197,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!nombre || !nie || !grado || !seccion || !String(turno ?? '').trim()) {
-      return NextResponse.json({ error: 'Nombre completo, NIE, grado, sección y turno son requeridos' }, { status: 400 })
+      return NextResponse.json({ error: 'Nombre completo, NIE, grado, secciÃ³n y turno son requeridos' }, { status: 400 })
     }
 
     if (!trimOrNull(lugarNacimiento)) {
@@ -209,7 +208,7 @@ export async function POST(req: NextRequest) {
     if (fechaNacimiento != null && String(fechaNacimiento).trim() !== '') {
       const d = new Date(String(fechaNacimiento))
       if (Number.isNaN(d.getTime())) {
-        return NextResponse.json({ error: 'Fecha de nacimiento inválida' }, { status: 400 })
+        return NextResponse.json({ error: 'Fecha de nacimiento invÃ¡lida' }, { status: 400 })
       }
       fechaNacimientoDate = d
     }
@@ -219,11 +218,11 @@ export async function POST(req: NextRequest) {
 
     const correoLimpio = trimOrNull(correo)
     if (!correoLimpio || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoLimpio)) {
-      return NextResponse.json({ error: 'Un correo válido es requerido' }, { status: 400 })
+      return NextResponse.json({ error: 'Un correo vÃ¡lido es requerido' }, { status: 400 })
     }
 
     if (!trimOrNull(direccion) || !trimOrNull(departamento) || !trimOrNull(municipio)) {
-      return NextResponse.json({ error: 'Dirección, departamento y municipio son requeridos' }, { status: 400 })
+      return NextResponse.json({ error: 'DirecciÃ³n, departamento y municipio son requeridos' }, { status: 400 })
     }
 
     if (!trimOrNull(encargado)) {
@@ -231,15 +230,15 @@ export async function POST(req: NextRequest) {
     }
 
     if (!telefono || !/^\d{8}$/.test(String(telefono))) {
-      return NextResponse.json({ error: 'El teléfono del responsable es requerido (8 dígitos)' }, { status: 400 })
+      return NextResponse.json({ error: 'El telÃ©fono del responsable es requerido (8 dÃ­gitos)' }, { status: 400 })
     }
 
     if (!/^\d{8}$/.test(nie)) {
-      return NextResponse.json({ error: 'El NIE debe tener exactamente 8 dígitos numéricos' }, { status: 400 })
+      return NextResponse.json({ error: 'El NIE debe tener exactamente 8 dÃ­gitos numÃ©ricos' }, { status: 400 })
     }
 
     if (padreTelefonoTrabajo && !/^\d{8}$/.test(String(padreTelefonoTrabajo))) {
-      return NextResponse.json({ error: 'El teléfono de trabajo del padre debe tener 8 dígitos' }, { status: 400 })
+      return NextResponse.json({ error: 'El telÃ©fono de trabajo del padre debe tener 8 dÃ­gitos' }, { status: 400 })
     }
 
     const documentosPermitidos = new Set<string>(DOCUMENTOS_MATRICULA as unknown as string[])
@@ -268,10 +267,6 @@ export async function POST(req: NextRequest) {
           typeof item === 'string' && comportamientosValidos.has(item)
         ))))
       : []
-
-    const pasatiemposLimpio = typeof pasatiempos === 'string' && pasatiempos.trim().length > 0
-      ? pasatiempos.trim()
-      : null
 
     const vacunasBaseSet = new Set<string>(VACUNAS_ALUMNO_BASE)
     const vacunasLimpias = Array.isArray(vacunas)
@@ -318,7 +313,6 @@ export async function POST(req: NextRequest) {
           turno,
           encargado: trimOrNull(encargado),
           telefono: telefono || null,
-          pasatiempos: pasatiemposLimpio,
           comportamiento: comportamientoLimpio,
           vacunas: vacunasLimpias,
           descripcion: trimOrNull(descripcion),
@@ -361,7 +355,7 @@ export async function POST(req: NextRequest) {
           padreCanton: trimOrNull(padreCanton),
           documentosEntregados: documentosLimpios,
           fotoDataUrl: fotoLimpia,
-        },
+        } as any,
       })
 
       // Talonario solo para COLEGIATURA

@@ -128,8 +128,7 @@ export default function EstudianteDetailPage() {
 
               <div className="mt-4 space-y-2 border-t pt-4">
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Comportamiento</p>
-                  <p className="text-sm"><span className="text-muted-foreground">Pasatiempos:</span> {estudiante.pasatiempos || '—'}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rasgos de Comportamiento</p>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {Array.isArray(estudiante.comportamiento) && estudiante.comportamiento.length > 0 ? (
@@ -386,7 +385,7 @@ export default function EstudianteDetailPage() {
               <CreditCard className="size-4 text-primary" /> Pagos Registrados
             </CardTitle>
           </CardHeader>
-          {estudiante.pagos.length === 0 ? (
+          {(estudiante.pagos?.length || 0) === 0 ? (
             <Empty className="border-0 min-h-[8rem]">
               <EmptyHeader>
                 <EmptyMedia variant="icon"><CreditCard /></EmptyMedia>
