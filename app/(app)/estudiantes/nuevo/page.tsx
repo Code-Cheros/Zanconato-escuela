@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/layout/Header'
-import { ArrowLeft, Plus, Save, UserPlus, HeartPulse, Activity, AlertTriangle, Baby, Brain, FileText, X, Trash2 } from 'lucide-react'
+import { ArrowLeft, Plus, Save, UserPlus, HeartPulse, Activity, AlertTriangle, Baby, Brain, FileText, X, Trash2, ClipboardList } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { GRADOS, SECCIONES, TURNOS, cn } from '@/lib/utils'
+import { GRADOS, SECCIONES, TURNOS, cn, RELIGIONES_OPCIONES, ESTADOS_CIVILES_OPCIONES, DOCUMENTOS_MATRICULA } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { COMPORTAMIENTOS_ALUMNO, ComportamientoAlumno, VACUNAS_ALUMNO_BASE } from '@/lib/estudianteComportamiento'
+import { Checkbox } from '@/components/ui/checkbox'
 
 export default function NuevoEstudiantePage() {
   const router = useRouter()
@@ -78,16 +79,45 @@ export default function NuevoEstudiantePage() {
   }, [])
   
   const [form, setForm] = useState({
-    nombre: '',
+    nombres: '',
+    primerApellido: '',
+    segundoApellido: '',
     nie: '',
+    lugarNacimiento: '',
+    fechaNacimiento: '',
+    correo: '',
+    religion: '',
+    estadoCivil: '',
+    estudioParvularia: false,
+    repiteGrado: false,
+    transporte: '',
+    distancia: '',
+    tallaPantalon: '',
+    tallaCamisa: '',
+    tallaZapatos: '',
+    direccion: '',
+    departamento: '',
+    municipio: '',
+    canton: '',
+    viveCon: '',
+    dependeEconomicamente: '',
+    miembrosFamilia: '',
+    estudianteTrabaja: false,
+    tieneHijos: false,
     grado: '',
     seccion: 'A',
     turno: 'Matutino',
     encargado: '',
     telefono: '',
+    padreProfesion: '',
+    padreTelefonoTrabajo: '',
+    padreDireccion: '',
+    padreDepartamento: '',
+    padreMunicipio: '',
+    padreCanton: '',
+    documentosEntregados: [] as string[],
     comportamiento: [] as ComportamientoAlumno[],
     vacunas: [] as string[],
-    // Nuevos campos
     descripcion: '',
     embarazo: '',
     embarazoPorQue: '',
@@ -99,21 +129,32 @@ export default function NuevoEstudiantePage() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  const namePartsFields = new Set(['nombres', 'primerApellido', 'segundoApellido', 'encargado', 'padreProfesion'])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    if (name === 'nie' || name === 'telefono') {
-      const onlyNums = value.replace(/[^0-9]/g, '')
-      if (onlyNums.length <= 8) {
-        setForm({ ...form, [name]: onlyNums })
-      }
+    if (name === 'nie' || name === 'telefono' || name === 'padreTelefonoTrabajo') {
+      const onlyNums = value.replace(/\D/g, '').slice(0, 8)
+      setForm({ ...form, [name]: onlyNums })
       return
     }
-    if (name === 'nombre' || name === 'encargado') {
-      const onlyLetters = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ ]/g, '')
+    if (namePartsFields.has(name)) {
+      const onlyLetters = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ .'-]/g, '')
       setForm({ ...form, [name]: onlyLetters })
       return
     }
     setForm({ ...form, [name]: value })
+  }
+
+  const toggleDocumentoMatricula = (doc: string, checked: boolean) => {
+    setForm((prev) => ({
+      ...prev,
+      documentosEntregados: checked
+        ? prev.documentosEntregados.includes(doc)
+          ? prev.documentosEntregados
+          : [...prev.documentosEntregados, doc]
+        : prev.documentosEntregados.filter((d) => d !== doc),
+    }))
   }
 
   const handleSelect = (field: keyof typeof form) => (value: string) => {
@@ -200,40 +241,60 @@ export default function NuevoEstudiantePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.nombre || !form.nie || !form.grado || !form.seccion) {
-      toast.error('Nombre, NIE, Grado y Sección son requeridos')
-      return
+    const nombresTrim = form.nombres.trim()
+    const primerApTrim = form.primerApellido.trim()
+    const segundoApTrim = form.segundoApellido.trim()
+    const nombreCompleto = [nombresTrim, primerApTrim, segundoApTrim].filter(Boolean).join(' ')
+
+    setErrors({})
+    const newErrors: Record<string, string> = {}
+
+    if (!nombresTrim) newErrors.nombres = 'Requerido'
+    if (!primerApTrim && !segundoApTrim) {
+      newErrors.primerApellido = 'Al menos un apellido'
+      newErrors.segundoApellido = 'Al menos un apellido'
+    }
+    if (!form.lugarNacimiento.trim()) newErrors.lugarNacimiento = 'Requerido'
+    if (!form.fechaNacimiento) newErrors.fechaNacimiento = 'Requerido'
+    if (!form.nie || !/^\d{8}$/.test(form.nie)) newErrors.nie = '8 dígitos numéricos'
+    const correoTrim = form.correo.trim()
+    if (!correoTrim) newErrors.correo = 'Requerido'
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoTrim)) newErrors.correo = 'Formato inválido'
+
+    if (!form.direccion.trim()) newErrors.direccion = 'Requerido'
+    if (!form.departamento.trim()) newErrors.departamento = 'Requerido'
+    if (!form.municipio.trim()) newErrors.municipio = 'Requerido'
+
+    if (!form.grado) newErrors.grado = 'Requerido'
+    if (!form.seccion) newErrors.seccion = 'Requerido'
+    if (!form.turno?.trim()) newErrors.turno = 'Requerido'
+
+    if (!form.encargado.trim()) newErrors.encargado = 'Requerido'
+    if (!form.telefono || !/^\d{8}$/.test(form.telefono)) {
+      newErrors.telefono = '8 dígitos obligatorios'
+    }
+    if (form.padreTelefonoTrabajo && !/^\d{8}$/.test(form.padreTelefonoTrabajo)) {
+      newErrors.padreTelefonoTrabajo = '8 dígitos numéricos'
     }
 
-    if (form.nie.length !== 8) {
-      toast.error('El NIE debe tener exactamente 8 dígitos')
-      return
-    }
-
-    if (form.telefono && form.telefono.length !== 8) {
-      toast.error('El teléfono debe tener exactamente 8 dígitos')
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      toast.error('Completá los campos obligatorios')
       return
     }
 
     setLoading(true)
-    setErrors({})
-
-    const newErrors: Record<string, string> = {}
-    if (!/^\d{8}$/.test(form.nie)) newErrors.nie = 'El NIE debe tener 8 dígitos numéricos'
-    if (form.telefono && !/^\d{8}$/.test(form.telefono)) newErrors.telefono = 'El teléfono debe tener 8 dígitos numéricos'
-    
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      setLoading(false)
-      toast.error('Revisa los errores en el formulario')
-      return
-    }
 
     try {
       const res = await fetch('/api/estudiantes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          nombre: nombreCompleto,
+          correo: correoTrim,
+          fechaNacimiento: form.fechaNacimiento || null,
+        }),
       })
       const data = await res.json()
       if (res.ok) {
@@ -254,7 +315,7 @@ export default function NuevoEstudiantePage() {
       <Header title="Matricular Estudiante" subtitle="Registro de nuevo estudiante" />
 
       <div className="flex-1 p-4 sm:p-6">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <Button variant="ghost" size="sm" className="mb-6 gap-1.5 px-0 text-muted-foreground hover:text-foreground" asChild>
             <Link href="/estudiantes">
               <ArrowLeft className="size-4" />
@@ -265,32 +326,109 @@ export default function NuevoEstudiantePage() {
           <Card>
             <CardHeader className="border-b">
               <div className="flex items-center gap-3">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 ">
                   <UserPlus className="size-4" />
                 </div>
                 <div>
                   <CardTitle className="text-base">Datos del Estudiante</CardTitle>
-                  <CardDescription>Se creará automáticamente un talonario para el año actual</CardDescription>
+                  <CardDescription>
+                    Se creará automáticamente un talonario para el año actual. Los campos marcados con{' '}
+                    <span className="text-destructive">*</span> son obligatorios.
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-6">
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  <div className="sm:col-span-2 space-y-1.5">
-                    <Label htmlFor="nombre">
-                      Nombre Completo <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="nombre"
-                      name="nombre"
-                      value={form.nombre}
-                      onChange={handleChange}
-                      placeholder="Nombre y apellidos del estudiante"
-                      required
-                    />
+                  <div className="sm:col-span-2">
+                    <p className="text-sm font-semibold text-foreground">Identificación del estudiante</p>
+                    <p className="text-xs text-muted-foreground">Completá nombres y apellidos como en el documento.</p>
                   </div>
 
+                  <div className="space-y-1.5">
+                    <Label htmlFor="nombres" className={cn(errors.nombres && 'text-destructive')}>
+                      Nombres <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="nombres"
+                      name="nombres"
+                      value={form.nombres}
+                      onChange={handleChange}
+                      placeholder="Ej. Walter Antonio"
+                      autoComplete="given-name"
+                      required
+                      aria-invalid={!!errors.nombres}
+                      className={cn(errors.nombres && 'border-destructive')}
+                    />
+                    {errors.nombres && <p className="text-[10px] text-destructive font-medium">{errors.nombres}</p>}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="primerApellido" className={cn(errors.primerApellido && 'text-destructive')}>
+                      Primer apellido <span className="text-destructive">*</span>
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground">Completá este o el segundo apellido (o ambos).</p>
+                    <Input
+                      id="primerApellido"
+                      name="primerApellido"
+                      value={form.primerApellido}
+                      onChange={handleChange}
+                      placeholder="Ej. Cortez"
+                      autoComplete="family-name"
+                      aria-invalid={!!errors.primerApellido}
+                      className={cn(errors.primerApellido && 'border-destructive')}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="segundoApellido" className={cn(errors.segundoApellido && 'text-destructive')}>
+                      Segundo apellido <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="segundoApellido"
+                      name="segundoApellido"
+                      value={form.segundoApellido}
+                      onChange={handleChange}
+                      placeholder="Ej. Meléndez"
+                      aria-invalid={!!errors.segundoApellido}
+                      className={cn(errors.segundoApellido && 'border-destructive')}
+                    />
+                    {(errors.primerApellido || errors.segundoApellido) && (
+                      <p className="text-[10px] text-destructive font-medium">{errors.primerApellido || errors.segundoApellido}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="lugarNacimiento" className={cn(errors.lugarNacimiento && 'text-destructive')}>
+                      Lugar de nacimiento <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="lugarNacimiento"
+                      name="lugarNacimiento"
+                      value={form.lugarNacimiento}
+                      onChange={handleChange}
+                      placeholder="Ej. San Salvador"
+                      required
+                      aria-invalid={!!errors.lugarNacimiento}
+                      className={cn(errors.lugarNacimiento && 'border-destructive')}
+                    />
+                    {errors.lugarNacimiento && <p className="text-[10px] text-destructive font-medium">{errors.lugarNacimiento}</p>}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="fechaNacimiento" className={cn(errors.fechaNacimiento && 'text-destructive')}>
+                      Fecha de nacimiento <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="fechaNacimiento"
+                      name="fechaNacimiento"
+                      type="date"
+                      value={form.fechaNacimiento}
+                      onChange={(e) => setForm((f) => ({ ...f, fechaNacimiento: e.target.value }))}
+                      required
+                      aria-invalid={!!errors.fechaNacimiento}
+                      className={cn(errors.fechaNacimiento && 'border-destructive')}
+                    />
+                    {errors.fechaNacimiento && <p className="text-[10px] text-destructive font-medium">{errors.fechaNacimiento}</p>}
+                  </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="nie">
                       NIE (8 dígitos) <span className="text-destructive">*</span>
@@ -306,83 +444,344 @@ export default function NuevoEstudiantePage() {
                       inputMode="numeric"
                       required
                     />
+                    {errors.nie && <p className="text-[10px] text-destructive font-medium">{errors.nie}</p>}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="correo" className={cn(errors.correo && 'text-destructive')}>
+                      Correo <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="correo"
+                      name="correo"
+                      type="email"
+                      value={form.correo}
+                      onChange={handleChange}
+                      placeholder="correo@ejemplo.com"
+                      autoComplete="email"
+                      required
+                      aria-invalid={!!errors.correo}
+                      className={cn(errors.correo && 'border-destructive')}
+                    />
+                    {errors.correo && <p className="text-[10px] text-destructive font-medium">{errors.correo}</p>}
                   </div>
 
+                  <div className="space-y-1.5">
+                    <Label htmlFor="religion">Religión</Label>
+                    <Select value={form.religion ? form.religion : '__none__'} onValueChange={(v) => setForm((f) => ({ ...f, religion: v === '__none__' ? '' : v }))}>
+                      <SelectTrigger id="religion" className="w-full">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Sin especificar</SelectItem>
+                        {RELIGIONES_OPCIONES.map((r) => (
+                          <SelectItem key={r} value={r}>
+                            {r}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="estadoCivil">Estado civil</Label>
+                    <Select value={form.estadoCivil ? form.estadoCivil : '__none__'} onValueChange={(v) => setForm((f) => ({ ...f, estadoCivil: v === '__none__' ? '' : v }))}>
+                      <SelectTrigger id="estadoCivil" className="w-full">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Sin especificar</SelectItem>
+                        {ESTADOS_CIVILES_OPCIONES.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="sm:col-span-2 flex flex-wrap gap-6 rounded-md border border-dashed bg-muted/10 px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="estudioParvularia"
+                        checked={form.estudioParvularia}
+                        onCheckedChange={(c) => setForm((f) => ({ ...f, estudioParvularia: c === true }))}
+                      />
+                      <Label htmlFor="estudioParvularia" className="text-sm font-normal leading-none">
+                        Estudió parvularia
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="repiteGrado" checked={form.repiteGrado} onCheckedChange={(c) => setForm((f) => ({ ...f, repiteGrado: c === true }))} />
+                      <Label htmlFor="repiteGrado" className="text-sm font-normal leading-none">
+                        Repite grado
+                      </Label>
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-2 pt-1">
+                    <p className="text-sm font-semibold">Transporte y uniforme</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="transporte">Transporte</Label>
+                    <Input id="transporte" name="transporte" value={form.transporte} onChange={handleChange} placeholder="Medio de transporte" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="distancia">Distancia</Label>
+                    <Input id="distancia" name="distancia" value={form.distancia} onChange={handleChange} placeholder="Ej. 2 km" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="tallaPantalon">Talla pantalón</Label>
+                    <Input id="tallaPantalon" name="tallaPantalon" value={form.tallaPantalon} onChange={handleChange} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="tallaCamisa">Camisa</Label>
+                    <Input id="tallaCamisa" name="tallaCamisa" value={form.tallaCamisa} onChange={handleChange} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="tallaZapatos">Zapatos</Label>
+                    <Input id="tallaZapatos" name="tallaZapatos" value={form.tallaZapatos} onChange={handleChange} />
+                  </div>
+
+                  <div className="sm:col-span-2 pt-1">
+                    <p className="text-sm font-semibold">Dirección del estudiante</p>
+                  </div>
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <Label htmlFor="direccion" className={cn(errors.direccion && 'text-destructive')}>
+                      Dirección <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="direccion"
+                      name="direccion"
+                      value={form.direccion}
+                      onChange={handleChange}
+                      placeholder="Dirección completa"
+                      required
+                      aria-invalid={!!errors.direccion}
+                      className={cn(errors.direccion && 'border-destructive')}
+                    />
+                    {errors.direccion && <p className="text-[10px] text-destructive font-medium">{errors.direccion}</p>}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="departamento" className={cn(errors.departamento && 'text-destructive')}>
+                      Departamento <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="departamento"
+                      name="departamento"
+                      value={form.departamento}
+                      onChange={handleChange}
+                      required
+                      aria-invalid={!!errors.departamento}
+                      className={cn(errors.departamento && 'border-destructive')}
+                    />
+                    {errors.departamento && <p className="text-[10px] text-destructive font-medium">{errors.departamento}</p>}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="municipio" className={cn(errors.municipio && 'text-destructive')}>
+                      Municipio <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="municipio"
+                      name="municipio"
+                      value={form.municipio}
+                      onChange={handleChange}
+                      required
+                      aria-invalid={!!errors.municipio}
+                      className={cn(errors.municipio && 'border-destructive')}
+                    />
+                    {errors.municipio && <p className="text-[10px] text-destructive font-medium">{errors.municipio}</p>}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="canton">Cantón</Label>
+                    <Input id="canton" name="canton" value={form.canton} onChange={handleChange} />
+                  </div>
+
+                  <div className="sm:col-span-2 pt-1">
+                    <p className="text-sm font-semibold">Situación familiar y socioeconómica</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="viveCon">Vive con</Label>
+                    <Input id="viveCon" name="viveCon" value={form.viveCon} onChange={handleChange} placeholder="Ej. Ambos padres" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="dependeEconomicamente">Depende económicamente de</Label>
+                    <Input id="dependeEconomicamente" name="dependeEconomicamente" value={form.dependeEconomicamente} onChange={handleChange} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="miembrosFamilia">Miembros en el hogar</Label>
+                    <Input id="miembrosFamilia" name="miembrosFamilia" value={form.miembrosFamilia} onChange={handleChange} placeholder="Ej. 4" inputMode="numeric" />
+                  </div>
+                  <div className="sm:col-span-2 flex flex-wrap gap-6">
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="estudianteTrabaja" checked={form.estudianteTrabaja} onCheckedChange={(c) => setForm((f) => ({ ...f, estudianteTrabaja: c === true }))} />
+                      <Label htmlFor="estudianteTrabaja" className="text-sm font-normal leading-none">
+                        Trabaja
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="tieneHijos" checked={form.tieneHijos} onCheckedChange={(c) => setForm((f) => ({ ...f, tieneHijos: c === true }))} />
+                      <Label htmlFor="tieneHijos" className="text-sm font-normal leading-none">
+                        Tiene hijos
+                      </Label>
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-2 pt-1">
+                    <p className="text-sm font-semibold">
+                      Matrícula académica <span className="text-destructive">*</span>
+                    </p>
+                  </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="grado">
                       Grado <span className="text-destructive">*</span>
                     </Label>
                     <Select value={form.grado} onValueChange={handleSelect('grado')} required>
-                      <SelectTrigger id="grado" className="w-full">
+                      <SelectTrigger id="grado" className={cn('w-full', errors.grado && 'border-destructive')}>
                         <SelectValue placeholder="Seleccionar grado" />
                       </SelectTrigger>
                       <SelectContent>
-                        {GRADOS.map(g => (
-                          <SelectItem key={g} value={g}>{g}</SelectItem>
+                        {GRADOS.map((g) => (
+                          <SelectItem key={g} value={g}>
+                            {g}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {errors.grado && <p className="text-[10px] text-destructive font-medium">{errors.grado}</p>}
                   </div>
-
                   <div className="space-y-1.5">
                     <Label htmlFor="seccion">
                       Sección <span className="text-destructive">*</span>
                     </Label>
                     <Select value={form.seccion} onValueChange={handleSelect('seccion')} required>
-                      <SelectTrigger id="seccion" className="w-full">
+                      <SelectTrigger id="seccion" className={cn('w-full', errors.seccion && 'border-destructive')}>
                         <SelectValue placeholder="Seleccionar sección" />
                       </SelectTrigger>
                       <SelectContent>
-                        {SECCIONES.map(s => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        {SECCIONES.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {errors.seccion && <p className="text-[10px] text-destructive font-medium">{errors.seccion}</p>}
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="turno" className="text-sm font-medium">Turno</Label>
-                    <Select 
-                      value={form.turno} 
-                      onValueChange={(v) => setForm({ ...form, turno: v })}
-                    >
-                      <SelectTrigger id="turno" className="h-10 bg-background transition-all focus:ring-2 focus:ring-primary/20">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="turno" className={cn('text-sm font-medium', errors.turno && 'text-destructive')}>
+                      Turno <span className="text-destructive">*</span>
+                    </Label>
+                    <Select value={form.turno} onValueChange={(v) => setForm((f) => ({ ...f, turno: v }))}>
+                      <SelectTrigger
+                        id="turno"
+                        className={cn(
+                          'h-10 bg-background transition-all focus:ring-2 focus:ring-primary/20',
+                          errors.turno && 'border-destructive'
+                        )}
+                      >
                         <SelectValue placeholder="Seleccionar turno" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {TURNOS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                      </SelectContent>
+                      <SelectContent>{TURNOS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                     </Select>
+                    {errors.turno && <p className="text-[10px] text-destructive font-medium">{errors.turno}</p>}
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="encargado">Encargado / Padre de familia</Label>
+                  <div className="sm:col-span-2 pt-2">
+                    <p className="text-sm font-semibold">Datos del responsable / padre</p>
+                  </div>
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <Label htmlFor="encargado" className={cn(errors.encargado && 'text-destructive')}>
+                      Nombre del padre o encargado <span className="text-destructive">*</span>
+                    </Label>
                     <Input
                       id="encargado"
                       name="encargado"
                       value={form.encargado}
                       onChange={handleChange}
-                      placeholder="Nombre del encargado"
+                      placeholder="Nombre completo"
+                      required
+                      aria-invalid={!!errors.encargado}
+                      className={cn(errors.encargado && 'border-destructive')}
                     />
+                    {errors.encargado && <p className="text-[10px] text-destructive font-medium">{errors.encargado}</p>}
                   </div>
-
                   <div className="space-y-1.5">
-                    <Label htmlFor="telefono" className={cn(errors.telefono && "text-destructive")}>Teléfono</Label>
+                    <Label htmlFor="padreProfesion">Profesión</Label>
+                    <Input id="padreProfesion" name="padreProfesion" value={form.padreProfesion} onChange={handleChange} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="telefono" className={cn(errors.telefono && 'text-destructive')}>
+                      Teléfono <span className="text-destructive">*</span>
+                    </Label>
                     <Input
                       id="telefono"
+                      name="telefono"
                       value={form.telefono}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, '').slice(0, 8)
-                        setForm({ ...form, telefono: val })
-                      }}
+                      onChange={handleChange}
                       placeholder="00000000"
-                      className={cn("h-10 bg-background", errors.telefono && "border-destructive focus-visible:ring-destructive")}
+                      required
+                      className={cn('h-10 bg-background font-mono', errors.telefono && 'border-destructive focus-visible:ring-destructive')}
+                      inputMode="numeric"
                     />
                     {errors.telefono && <p className="text-[10px] text-destructive font-medium">{errors.telefono}</p>}
                   </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="padreTelefonoTrabajo" className={cn(errors.padreTelefonoTrabajo && 'text-destructive')}>
+                      Teléfono trabajo
+                    </Label>
+                    <Input
+                      id="padreTelefonoTrabajo"
+                      name="padreTelefonoTrabajo"
+                      value={form.padreTelefonoTrabajo}
+                      onChange={handleChange}
+                      placeholder="00000000"
+                      className={cn('font-mono', errors.padreTelefonoTrabajo && 'border-destructive')}
+                      inputMode="numeric"
+                    />
+                    {errors.padreTelefonoTrabajo && (
+                      <p className="text-[10px] text-destructive font-medium">{errors.padreTelefonoTrabajo}</p>
+                    )}
+                  </div>
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <Label htmlFor="padreDireccion">Dirección del responsable</Label>
+                    <Input id="padreDireccion" name="padreDireccion" value={form.padreDireccion} onChange={handleChange} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="padreDepartamento">Departamento</Label>
+                    <Input id="padreDepartamento" name="padreDepartamento" value={form.padreDepartamento} onChange={handleChange} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="padreMunicipio">Municipio</Label>
+                    <Input id="padreMunicipio" name="padreMunicipio" value={form.padreMunicipio} onChange={handleChange} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="padreCanton">Cantón</Label>
+                    <Input id="padreCanton" name="padreCanton" value={form.padreCanton} onChange={handleChange} />
+                  </div>
+
+                  <div className="sm:col-span-2 space-y-3 rounded-lg border bg-muted/15 p-4">
+                    <div className="flex items-center gap-2 text-foreground">
+                      <ClipboardList className="size-4 text-primary" />
+                      <p className="text-sm font-semibold">Documentos entregados</p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      {DOCUMENTOS_MATRICULA.map((doc) => (
+                        <div key={doc} className="flex items-start gap-2">
+                          <Checkbox
+                            id={`doc-${doc}`}
+                            checked={form.documentosEntregados.includes(doc)}
+                            onCheckedChange={(c) => toggleDocumentoMatricula(doc, c === true)}
+                            className="mt-0.5"
+                          />
+                          <Label htmlFor={`doc-${doc}`} className="cursor-pointer text-sm font-normal leading-snug">
+                            {doc}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
                   <div className="sm:col-span-2 space-y-4 pt-4 border-t">
-                    <div className="flex items-center gap-2 text-primary">
+                    <div className="flex items-center gap-2 text-primary dark:text-white">
                       <HeartPulse className="size-5" />
                       <h3 className="font-bold">Ficha Médica / Datos Personales</h3>
                     </div>
@@ -469,7 +868,7 @@ export default function NuevoEstudiantePage() {
                         <div key={list.field} className="sm:col-span-2 space-y-3 rounded-lg border bg-muted/20 p-4">
                           <div className="space-y-1">
                             <Label className="text-sm font-semibold flex items-center gap-1.5">
-                              <list.icon className="size-3.5 text-primary" />
+                              <list.icon className="size-3.5 text-primary dark:text-white" />
                               {list.label}
                             </Label>
                           </div>
