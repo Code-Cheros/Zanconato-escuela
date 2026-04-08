@@ -185,61 +185,53 @@ export async function POST(req: NextRequest) {
     const trimOrNull = (v: unknown): string | null =>
       typeof v === 'string' && v.trim().length > 0 ? v.trim() : null
 
+    const trimOrEmpty = (v: unknown): string =>
+      typeof v === 'string' ? v.trim() : ''
+
+    const normPhone8 = (v: unknown): string | null => {
+      if (v == null || v === '') return null
+      const d = String(v).replace(/\D/g, '').slice(0, 8)
+      return d.length === 8 ? d : null
+    }
+
+    const normCorreo = (v: unknown): string | null => {
+      const t = trimOrNull(v)
+      if (!t) return null
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) ? t : null
+    }
+
     const nombresT = trimOrNull(nombres)
     const primerApT = trimOrNull(primerApellido)
     const segundoApT = trimOrNull(segundoApellido)
+    const nombreCompleto =
+      trimOrEmpty(nombre) ||
+      [nombresT, primerApT, segundoApT].filter(Boolean).join(' ').trim()
 
-    if (!nombresT) {
-      return NextResponse.json({ error: 'Los nombres son requeridos' }, { status: 400 })
-    }
-    if (!primerApT && !segundoApT) {
-      return NextResponse.json({ error: 'Al menos un apellido es requerido' }, { status: 400 })
-    }
+    const nieDigits = String(nie ?? '')
+      .replace(/\D/g, '')
+      .slice(0, 8)
+    const nieFinal: string | null = /^\d{8}$/.test(nieDigits) ? nieDigits : null
 
-    if (!nombre || !nie || !grado || !seccion || !String(turno ?? '').trim()) {
-      return NextResponse.json({ error: 'Nombre completo, NIE, grado, secciÃ³n y turno son requeridos' }, { status: 400 })
-    }
-
-    if (!trimOrNull(lugarNacimiento)) {
-      return NextResponse.json({ error: 'El lugar de nacimiento es requerido' }, { status: 400 })
+    if (nieFinal !== null) {
+      const existing = await prisma.estudiante.findUnique({ where: { nie: nieFinal } })
+      if (existing) {
+        return NextResponse.json({ error: 'NIE ya registrado' }, { status: 409 })
+      }
     }
 
     let fechaNacimientoDate: Date | null = null
     if (fechaNacimiento != null && String(fechaNacimiento).trim() !== '') {
       const d = new Date(String(fechaNacimiento))
-      if (Number.isNaN(d.getTime())) {
-        return NextResponse.json({ error: 'Fecha de nacimiento invÃ¡lida' }, { status: 400 })
-      }
-      fechaNacimientoDate = d
-    }
-    if (!fechaNacimientoDate) {
-      return NextResponse.json({ error: 'La fecha de nacimiento es requerida' }, { status: 400 })
+      if (!Number.isNaN(d.getTime())) fechaNacimientoDate = d
     }
 
-    const correoLimpio = trimOrNull(correo)
-    if (!correoLimpio || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoLimpio)) {
-      return NextResponse.json({ error: 'Un correo vÃ¡lido es requerido' }, { status: 400 })
-    }
+    const correoLimpio = normCorreo(correo)
 
-    if (!trimOrNull(direccion) || !trimOrNull(departamento) || !trimOrNull(municipio)) {
-      return NextResponse.json({ error: 'DirecciÃ³n, departamento y municipio son requeridos' }, { status: 400 })
-    }
+    const gradoStr = trimOrEmpty(grado)
+    const seccionStr = trimOrEmpty(seccion)
 
-    if (!trimOrNull(encargado)) {
-      return NextResponse.json({ error: 'El nombre del responsable es requerido' }, { status: 400 })
-    }
-
-    if (!telefono || !/^\d{8}$/.test(String(telefono))) {
-      return NextResponse.json({ error: 'El telÃ©fono del responsable es requerido (8 dÃ­gitos)' }, { status: 400 })
-    }
-
-    if (!/^\d{8}$/.test(nie)) {
-      return NextResponse.json({ error: 'El NIE debe tener exactamente 8 dÃ­gitos numÃ©ricos' }, { status: 400 })
-    }
-
-    if (padreTelefonoTrabajo && !/^\d{8}$/.test(String(padreTelefonoTrabajo))) {
-      return NextResponse.json({ error: 'El telÃ©fono de trabajo del padre debe tener 8 dÃ­gitos' }, { status: 400 })
-    }
+    const telefonoLimpio = normPhone8(telefono)
+    const padreTelTrabajo = normPhone8(padreTelefonoTrabajo)
 
     const documentosPermitidos = new Set<string>(DOCUMENTOS_MATRICULA as unknown as string[])
     const documentosLimpios = Array.isArray(documentosEntregados)
@@ -282,11 +274,6 @@ export async function POST(req: NextRequest) {
         ))
       : []
 
-    const existing = await prisma.estudiante.findUnique({ where: { nie } })
-    if (existing) {
-      return NextResponse.json({ error: 'NIE ya registrado' }, { status: 409 })
-    }
-
     const anioActual = new Date().getFullYear()
     const config = await prismaCompat.configuracionSistema.upsert({
       where: { id: 'global' },
@@ -306,13 +293,13 @@ export async function POST(req: NextRequest) {
     const resultado = await prisma.$transaction(async (tx: any) => {
       const estudiante = await tx.estudiante.create({
         data: {
-          nombre,
-          nie,
-          grado,
-          seccion,
-          turno,
+          nombre: nombreCompleto,
+          nie: nieFinal,
+          grado: gradoStr,
+          seccion: seccionStr,
+          turno: trimOrNull(turno),
           encargado: trimOrNull(encargado),
-          telefono: telefono || null,
+          telefono: telefonoLimpio,
           comportamiento: comportamientoLimpio,
           vacunas: vacunasLimpias,
           descripcion: trimOrNull(descripcion),
@@ -348,7 +335,7 @@ export async function POST(req: NextRequest) {
           estudianteTrabaja: Boolean(estudianteTrabaja),
           tieneHijos: Boolean(tieneHijos),
           padreProfesion: trimOrNull(padreProfesion),
-          padreTelefonoTrabajo: padreTelefonoTrabajo ? String(padreTelefonoTrabajo).replace(/\D/g, '').slice(0, 8) || null : null,
+          padreTelefonoTrabajo: padreTelTrabajo,
           padreDireccion: trimOrNull(padreDireccion),
           padreDepartamento: trimOrNull(padreDepartamento),
           padreMunicipio: trimOrNull(padreMunicipio),
@@ -363,9 +350,9 @@ export async function POST(req: NextRequest) {
         data: {
           estudianteId: estudiante.id,
           anio: anioActual,
-          grado,
-          seccion,
-          turno
+          grado: gradoStr || null,
+          seccion: seccionStr || null,
+          turno: trimOrNull(turno),
         },
       })
 
