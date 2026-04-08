@@ -263,7 +263,7 @@ function ComprobanteCard({
   montoMora: number
   diaLimitePago: number
 }) {
-  const talonarioCode = getSeededNumber(`${comp.id}-${anio}-${estudiante.nie}`)
+  const talonarioCode = getSeededNumber(`${comp.id}-${anio}-${estudiante.nie ?? ''}`)
 
   return (
     <div className="relative h-[58mm] overflow-hidden rounded-[2px] border border-[#aac1d0] bg-white text-slate-900 print-slip">
