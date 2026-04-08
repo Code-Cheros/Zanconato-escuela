@@ -127,9 +127,7 @@ export default function NuevoEstudiantePage() {
     alergias: [] as string[],
     limitaciones: [] as string[],
   })
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
-  const namePartsFields = new Set(['nombres', 'primerApellido', 'segundoApellido', 'encargado', 'padreProfesion'])
+    const namePartsFields = new Set(['nombres', 'primerApellido', 'segundoApellido', 'encargado', 'padreProfesion'])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -246,43 +244,6 @@ export default function NuevoEstudiantePage() {
     const segundoApTrim = form.segundoApellido.trim()
     const nombreCompleto = [nombresTrim, primerApTrim, segundoApTrim].filter(Boolean).join(' ')
 
-    setErrors({})
-    const newErrors: Record<string, string> = {}
-
-    if (!nombresTrim) newErrors.nombres = 'Requerido'
-    if (!primerApTrim && !segundoApTrim) {
-      newErrors.primerApellido = 'Al menos un apellido'
-      newErrors.segundoApellido = 'Al menos un apellido'
-    }
-    if (!form.lugarNacimiento.trim()) newErrors.lugarNacimiento = 'Requerido'
-    if (!form.fechaNacimiento) newErrors.fechaNacimiento = 'Requerido'
-    if (!form.nie || !/^\d{8}$/.test(form.nie)) newErrors.nie = '8 dígitos numéricos'
-    const correoTrim = form.correo.trim()
-    if (!correoTrim) newErrors.correo = 'Requerido'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoTrim)) newErrors.correo = 'Formato inválido'
-
-    if (!form.direccion.trim()) newErrors.direccion = 'Requerido'
-    if (!form.departamento.trim()) newErrors.departamento = 'Requerido'
-    if (!form.municipio.trim()) newErrors.municipio = 'Requerido'
-
-    if (!form.grado) newErrors.grado = 'Requerido'
-    if (!form.seccion) newErrors.seccion = 'Requerido'
-    if (!form.turno?.trim()) newErrors.turno = 'Requerido'
-
-    if (!form.encargado.trim()) newErrors.encargado = 'Requerido'
-    if (!form.telefono || !/^\d{8}$/.test(form.telefono)) {
-      newErrors.telefono = '8 dígitos obligatorios'
-    }
-    if (form.padreTelefonoTrabajo && !/^\d{8}$/.test(form.padreTelefonoTrabajo)) {
-      newErrors.padreTelefonoTrabajo = '8 dígitos numéricos'
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      toast.error('Completá los campos obligatorios')
-      return
-    }
-
     setLoading(true)
 
     try {
@@ -292,7 +253,7 @@ export default function NuevoEstudiantePage() {
         body: JSON.stringify({
           ...form,
           nombre: nombreCompleto,
-          correo: correoTrim,
+          correo: form.correo.trim(),
           fechaNacimiento: form.fechaNacimiento || null,
         }),
       })
@@ -332,8 +293,8 @@ export default function NuevoEstudiantePage() {
                 <div>
                   <CardTitle className="text-base">Datos del Estudiante</CardTitle>
                   <CardDescription>
-                    Se creará automáticamente un talonario para el año actual. Los campos marcados con{' '}
-                    <span className="text-destructive">*</span> son obligatorios.
+                    Se creará automáticamente un talonario para el año actual. Podés guardar el registro incompleto y
+                    completarlo después.
                   </CardDescription>
                 </div>
               </div>
@@ -347,8 +308,8 @@ export default function NuevoEstudiantePage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="nombres" className={cn(errors.nombres && 'text-destructive')}>
-                      Nombres <span className="text-destructive">*</span>
+                    <Label htmlFor="nombres">
+                      Nombres
                     </Label>
                     <Input
                       id="nombres"
@@ -357,15 +318,10 @@ export default function NuevoEstudiantePage() {
                       onChange={handleChange}
                       placeholder="Ej. Walter Antonio"
                       autoComplete="given-name"
-                      required
-                      aria-invalid={!!errors.nombres}
-                      className={cn(errors.nombres && 'border-destructive')}
-                    />
-                    {errors.nombres && <p className="text-[10px] text-destructive font-medium">{errors.nombres}</p>}
-                  </div>
+                    />                  </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="primerApellido" className={cn(errors.primerApellido && 'text-destructive')}>
-                      Primer apellido <span className="text-destructive">*</span>
+                    <Label htmlFor="primerApellido">
+                      Primer apellido
                     </Label>
                     {/* <p className="text-[10px] text-muted-foreground">Completá este o el segundo apellido (o ambos).</p> */}
                     <Input
@@ -375,13 +331,11 @@ export default function NuevoEstudiantePage() {
                       onChange={handleChange}
                       placeholder="Ej. Cortez"
                       autoComplete="family-name"
-                      aria-invalid={!!errors.primerApellido}
-                      className={cn(errors.primerApellido && 'border-destructive')}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="segundoApellido" className={cn(errors.segundoApellido && 'text-destructive')}>
-                      Segundo apellido <span className="text-destructive">*</span>
+                    <Label htmlFor="segundoApellido">
+                      Segundo apellido
                     </Label>
                     <Input
                       id="segundoApellido"
@@ -389,17 +343,12 @@ export default function NuevoEstudiantePage() {
                       value={form.segundoApellido}
                       onChange={handleChange}
                       placeholder="Ej. Meléndez"
-                      aria-invalid={!!errors.segundoApellido}
-                      className={cn(errors.segundoApellido && 'border-destructive')}
                     />
-                    {(errors.primerApellido || errors.segundoApellido) && (
-                      <p className="text-[10px] text-destructive font-medium">{errors.primerApellido || errors.segundoApellido}</p>
-                    )}
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="lugarNacimiento" className={cn(errors.lugarNacimiento && 'text-destructive')}>
-                      Lugar de nacimiento <span className="text-destructive">*</span>
+                    <Label htmlFor="lugarNacimiento">
+                      Lugar de nacimiento
                     </Label>
                     <Input
                       id="lugarNacimiento"
@@ -407,15 +356,10 @@ export default function NuevoEstudiantePage() {
                       value={form.lugarNacimiento}
                       onChange={handleChange}
                       placeholder="Ej. San Salvador"
-                      required
-                      aria-invalid={!!errors.lugarNacimiento}
-                      className={cn(errors.lugarNacimiento && 'border-destructive')}
-                    />
-                    {errors.lugarNacimiento && <p className="text-[10px] text-destructive font-medium">{errors.lugarNacimiento}</p>}
-                  </div>
+                    />                  </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="fechaNacimiento" className={cn(errors.fechaNacimiento && 'text-destructive')}>
-                      Fecha de nacimiento <span className="text-destructive">*</span>
+                    <Label htmlFor="fechaNacimiento">
+                      Fecha de nacimiento
                     </Label>
                     <Input
                       id="fechaNacimiento"
@@ -423,15 +367,10 @@ export default function NuevoEstudiantePage() {
                       type="date"
                       value={form.fechaNacimiento}
                       onChange={(e) => setForm((f) => ({ ...f, fechaNacimiento: e.target.value }))}
-                      required
-                      aria-invalid={!!errors.fechaNacimiento}
-                      className={cn(errors.fechaNacimiento && 'border-destructive')}
-                    />
-                    {errors.fechaNacimiento && <p className="text-[10px] text-destructive font-medium">{errors.fechaNacimiento}</p>}
-                  </div>
+                    />                  </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="nie">
-                      NIE (8 dígitos) <span className="text-destructive">*</span>
+                      NIE (8 dígitos)
                     </Label>
                     <Input
                       id="nie"
@@ -442,13 +381,10 @@ export default function NuevoEstudiantePage() {
                       className="font-mono"
                       maxLength={8}
                       inputMode="numeric"
-                      required
-                    />
-                    {errors.nie && <p className="text-[10px] text-destructive font-medium">{errors.nie}</p>}
-                  </div>
+                    />                  </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="correo" className={cn(errors.correo && 'text-destructive')}>
-                      Correo <span className="text-destructive">*</span>
+                    <Label htmlFor="correo">
+                      Correo
                     </Label>
                     <Input
                       id="correo"
@@ -458,12 +394,7 @@ export default function NuevoEstudiantePage() {
                       onChange={handleChange}
                       placeholder="correo@ejemplo.com"
                       autoComplete="email"
-                      required
-                      aria-invalid={!!errors.correo}
-                      className={cn(errors.correo && 'border-destructive')}
-                    />
-                    {errors.correo && <p className="text-[10px] text-destructive font-medium">{errors.correo}</p>}
-                  </div>
+                    />                  </div>
 
                   <div className="space-y-1.5">
                     <Label htmlFor="religion">Religión</Label>
@@ -545,8 +476,8 @@ export default function NuevoEstudiantePage() {
                     <p className="text-sm font-semibold">Dirección del estudiante</p>
                   </div>
                   <div className="sm:col-span-2 space-y-1.5">
-                    <Label htmlFor="direccion" className={cn(errors.direccion && 'text-destructive')}>
-                      Dirección <span className="text-destructive">*</span>
+                    <Label htmlFor="direccion">
+                      Dirección
                     </Label>
                     <Input
                       id="direccion"
@@ -554,42 +485,27 @@ export default function NuevoEstudiantePage() {
                       value={form.direccion}
                       onChange={handleChange}
                       placeholder="Dirección completa"
-                      required
-                      aria-invalid={!!errors.direccion}
-                      className={cn(errors.direccion && 'border-destructive')}
-                    />
-                    {errors.direccion && <p className="text-[10px] text-destructive font-medium">{errors.direccion}</p>}
-                  </div>
+                    />                  </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="departamento" className={cn(errors.departamento && 'text-destructive')}>
-                      Departamento <span className="text-destructive">*</span>
+                    <Label htmlFor="departamento">
+                      Departamento
                     </Label>
                     <Input
                       id="departamento"
                       name="departamento"
                       value={form.departamento}
                       onChange={handleChange}
-                      required
-                      aria-invalid={!!errors.departamento}
-                      className={cn(errors.departamento && 'border-destructive')}
-                    />
-                    {errors.departamento && <p className="text-[10px] text-destructive font-medium">{errors.departamento}</p>}
-                  </div>
+                    />                  </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="municipio" className={cn(errors.municipio && 'text-destructive')}>
-                      Municipio <span className="text-destructive">*</span>
+                    <Label htmlFor="municipio">
+                      Municipio
                     </Label>
                     <Input
                       id="municipio"
                       name="municipio"
                       value={form.municipio}
                       onChange={handleChange}
-                      required
-                      aria-invalid={!!errors.municipio}
-                      className={cn(errors.municipio && 'border-destructive')}
-                    />
-                    {errors.municipio && <p className="text-[10px] text-destructive font-medium">{errors.municipio}</p>}
-                  </div>
+                    />                  </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="canton">Cantón</Label>
                     <Input id="canton" name="canton" value={form.canton} onChange={handleChange} />
@@ -627,15 +543,15 @@ export default function NuevoEstudiantePage() {
 
                   <div className="sm:col-span-2 pt-1">
                     <p className="text-sm font-semibold">
-                      Matrícula académica <span className="text-destructive">*</span>
+                      Matrícula académica
                     </p>
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="grado">
-                      Grado <span className="text-destructive">*</span>
+                      Grado
                     </Label>
-                    <Select value={form.grado} onValueChange={handleSelect('grado')} required>
-                      <SelectTrigger id="grado" className={cn('w-full', errors.grado && 'border-destructive')}>
+                    <Select value={form.grado || undefined} onValueChange={handleSelect('grado')}>
+                      <SelectTrigger id="grado" className="w-full">
                         <SelectValue placeholder="Seleccionar grado" />
                       </SelectTrigger>
                       <SelectContent>
@@ -645,15 +561,13 @@ export default function NuevoEstudiantePage() {
                           </SelectItem>
                         ))}
                       </SelectContent>
-                    </Select>
-                    {errors.grado && <p className="text-[10px] text-destructive font-medium">{errors.grado}</p>}
-                  </div>
+                    </Select>                  </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="seccion">
-                      Sección <span className="text-destructive">*</span>
+                      Sección
                     </Label>
-                    <Select value={form.seccion} onValueChange={handleSelect('seccion')} required>
-                      <SelectTrigger id="seccion" className={cn('w-full', errors.seccion && 'border-destructive')}>
+                    <Select value={form.seccion || undefined} onValueChange={handleSelect('seccion')}>
+                      <SelectTrigger id="seccion" className="w-full">
                         <SelectValue placeholder="Seleccionar sección" />
                       </SelectTrigger>
                       <SelectContent>
@@ -663,34 +577,27 @@ export default function NuevoEstudiantePage() {
                           </SelectItem>
                         ))}
                       </SelectContent>
-                    </Select>
-                    {errors.seccion && <p className="text-[10px] text-destructive font-medium">{errors.seccion}</p>}
-                  </div>
+                    </Select>                  </div>
                   <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="turno" className={cn('text-sm font-medium', errors.turno && 'text-destructive')}>
-                      Turno <span className="text-destructive">*</span>
+                    <Label htmlFor="turno" className="text-sm font-medium">
+                      Turno
                     </Label>
                     <Select value={form.turno} onValueChange={(v) => setForm((f) => ({ ...f, turno: v }))}>
                       <SelectTrigger
                         id="turno"
-                        className={cn(
-                          'h-10 bg-background transition-all focus:ring-2 focus:ring-primary/20',
-                          errors.turno && 'border-destructive'
-                        )}
+                      className={'h-10 bg-background transition-all focus:ring-2 focus:ring-primary/20'}
                       >
                         <SelectValue placeholder="Seleccionar turno" />
                       </SelectTrigger>
                       <SelectContent>{TURNOS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                    </Select>
-                    {errors.turno && <p className="text-[10px] text-destructive font-medium">{errors.turno}</p>}
-                  </div>
+                    </Select>                  </div>
 
                   <div className="sm:col-span-2 pt-2">
                     <p className="text-sm font-semibold">Datos del responsable / padre</p>
                   </div>
                   <div className="sm:col-span-2 space-y-1.5">
-                    <Label htmlFor="encargado" className={cn(errors.encargado && 'text-destructive')}>
-                      Nombre del padre o encargado <span className="text-destructive">*</span>
+                    <Label htmlFor="encargado">
+                      Nombre del padre o encargado
                     </Label>
                     <Input
                       id="encargado"
@@ -698,19 +605,14 @@ export default function NuevoEstudiantePage() {
                       value={form.encargado}
                       onChange={handleChange}
                       placeholder="Nombre completo"
-                      required
-                      aria-invalid={!!errors.encargado}
-                      className={cn(errors.encargado && 'border-destructive')}
-                    />
-                    {errors.encargado && <p className="text-[10px] text-destructive font-medium">{errors.encargado}</p>}
-                  </div>
+                    />                  </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="padreProfesion">Profesión</Label>
                     <Input id="padreProfesion" name="padreProfesion" value={form.padreProfesion} onChange={handleChange} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="telefono" className={cn(errors.telefono && 'text-destructive')}>
-                      Teléfono <span className="text-destructive">*</span>
+                    <Label htmlFor="telefono">
+                      Teléfono
                     </Label>
                     <Input
                       id="telefono"
@@ -718,14 +620,11 @@ export default function NuevoEstudiantePage() {
                       value={form.telefono}
                       onChange={handleChange}
                       placeholder="00000000"
-                      required
-                      className={cn('h-10 bg-background font-mono', errors.telefono && 'border-destructive focus-visible:ring-destructive')}
+                      className={'h-10 bg-background font-mono'}
                       inputMode="numeric"
-                    />
-                    {errors.telefono && <p className="text-[10px] text-destructive font-medium">{errors.telefono}</p>}
-                  </div>
+                    />                  </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="padreTelefonoTrabajo" className={cn(errors.padreTelefonoTrabajo && 'text-destructive')}>
+                    <Label htmlFor="padreTelefonoTrabajo">
                       Teléfono trabajo
                     </Label>
                     <Input
@@ -734,13 +633,9 @@ export default function NuevoEstudiantePage() {
                       value={form.padreTelefonoTrabajo}
                       onChange={handleChange}
                       placeholder="00000000"
-                      className={cn('font-mono', errors.padreTelefonoTrabajo && 'border-destructive')}
+                      className={'font-mono'}
                       inputMode="numeric"
-                    />
-                    {errors.padreTelefonoTrabajo && (
-                      <p className="text-[10px] text-destructive font-medium">{errors.padreTelefonoTrabajo}</p>
-                    )}
-                  </div>
+                    />                  </div>
                   <div className="sm:col-span-2 space-y-1.5">
                     <Label htmlFor="padreDireccion">Dirección del responsable</Label>
                     <Input id="padreDireccion" name="padreDireccion" value={form.padreDireccion} onChange={handleChange} />
