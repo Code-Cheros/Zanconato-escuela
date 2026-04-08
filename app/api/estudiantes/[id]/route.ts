@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { DOCUMENTOS_MATRICULA } from '@/lib/utils'
 import { COMPORTAMIENTOS_ALUMNO, VACUNAS_ALUMNO_BASE } from '@/lib/estudianteComportamiento'
 
 export async function GET(
@@ -108,28 +109,48 @@ export async function PUT(
       padreMunicipio,
       padreCanton,
       documentosEntregados,
+      activo,
     } = body
 
     const trimOrNull = (v: unknown): string | null =>
       typeof v === 'string' && v.trim().length > 0 ? v.trim() : null
 
-    // Validaciones b\u00e1sicas
-    if (nie && !/^\d{8}$/.test(nie)) {
-      return NextResponse.json({ error: 'El NIE debe tener 8 d\u00edgitos' }, { status: 400 })
+    const trimOrEmpty = (v: unknown): string =>
+      typeof v === 'string' ? v.trim() : ''
+
+    const normPhone8 = (v: unknown): string | null => {
+      if (v == null || v === '') return null
+      const d = String(v).replace(/\D/g, '').slice(0, 8)
+      return d.length === 8 ? d : null
     }
 
-    let fechaNacimientoDate: Date | null = null
-    if (fechaNacimiento) {
-      const d = new Date(fechaNacimiento)
-      if (!isNaN(d.getTime())) {
-        fechaNacimientoDate = d
+    const normCorreo = (v: unknown): string | null => {
+      const t = trimOrNull(v)
+      if (!t) return null
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) ? t : null
+    }
+
+    const nieDigits = String(nie ?? '')
+      .replace(/\D/g, '')
+      .slice(0, 8)
+    const nieFinal: string | null = /^\d{8}$/.test(nieDigits) ? nieDigits : null
+
+    if (nieFinal) {
+      const taken = await prisma.estudiante.findFirst({
+        where: { nie: nieFinal, NOT: { id } },
+      })
+      if (taken) {
+        return NextResponse.json({ error: 'NIE ya registrado' }, { status: 409 })
       }
     }
 
-    const correoLimpio = trimOrNull(correo)
-    if (correoLimpio && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoLimpio)) {
-      return NextResponse.json({ error: 'Correo inv\u00e1lido' }, { status: 400 })
+    let fechaNacimientoDate: Date | null = null
+    if (fechaNacimiento != null && String(fechaNacimiento).trim() !== '') {
+      const d = new Date(String(fechaNacimiento))
+      if (!Number.isNaN(d.getTime())) fechaNacimientoDate = d
     }
+
+    const correoLimpio = normCorreo(correo)
 
     let fotoUpdate = {}
     if (fotoDataUrl === null) {
@@ -168,16 +189,28 @@ export async function PUT(
         ))
       : []
 
+    const documentosPermitidos = new Set<string>(DOCUMENTOS_MATRICULA as unknown as string[])
+    const documentosLimpios = Array.isArray(documentosEntregados)
+      ? Array.from(
+          new Set(
+            documentosEntregados.filter(
+              (item: unknown): item is string =>
+                typeof item === 'string' && documentosPermitidos.has(item)
+            )
+          )
+        )
+      : []
+
     const estudiante = await prisma.estudiante.update({
       where: { id },
       data: {
-        nombre,
-        nie,
-        grado,
-        seccion,
-        turno,
+        nombre: trimOrEmpty(nombre),
+        nie: nieFinal,
+        grado: trimOrEmpty(grado),
+        seccion: trimOrEmpty(seccion),
+        turno: trimOrNull(turno),
         encargado: trimOrNull(encargado),
-        telefono: telefono || null,
+        telefono: normPhone8(telefono),
         comportamiento: comportamientoLimpio,
         vacunas: vacunasLimpias,
         descripcion: trimOrNull(descripcion),
@@ -213,13 +246,14 @@ export async function PUT(
         estudianteTrabaja: Boolean(estudianteTrabaja),
         tieneHijos: Boolean(tieneHijos),
         padreProfesion: trimOrNull(padreProfesion),
-        padreTelefonoTrabajo: padreTelefonoTrabajo ? String(padreTelefonoTrabajo).replace(/\D/g, '').slice(0, 8) || null : null,
+        padreTelefonoTrabajo: normPhone8(padreTelefonoTrabajo),
         padreDireccion: trimOrNull(padreDireccion),
         padreDepartamento: trimOrNull(padreDepartamento),
         padreMunicipio: trimOrNull(padreMunicipio),
         padreCanton: trimOrNull(padreCanton),
-        documentosEntregados: Array.isArray(documentosEntregados) ? documentosEntregados : [],
-        ...fotoUpdate
+        documentosEntregados: documentosLimpios,
+        ...(activo !== undefined ? { activo: Boolean(activo) } : {}),
+        ...fotoUpdate,
       } as any
     })
 
