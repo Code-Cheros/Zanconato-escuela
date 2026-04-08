@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
 
   worksheet.mergeCells(2, 2, 4, 7)
   const titleCell = worksheet.getCell(2, 2)
-  titleCell.value = 'Complejo Educativo Católico Zaconato'
+  titleCell.value = 'Complejo Educativo Católico Zanconato'
   titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFC53030' } } // Red for penalties/debt
   titleCell.alignment = { vertical: 'middle', horizontal: 'center' }
 

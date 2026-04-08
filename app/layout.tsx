@@ -10,7 +10,7 @@ const geist = Geist({ subsets: ['latin'], variable: '--font-sans' })
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Complejo Educativo Católico Zaconato',
+  title: 'Complejo Educativo Católico Zanconato',
   description: 'Sistema de Gestión Escolar',
 }
 

@@ -393,7 +393,7 @@ export default function ImprimirTalonarioPage() {
             </div>
 
             <div className="mt-4 border-t border-gray-200 pt-2 text-center text-[9px] text-gray-400">
-              Complejo Educativo Católico Zaconato · Talonario {talonario.anio} · {talonario.estudiante.nombre}
+              Complejo Educativo Católico Zanconato · Talonario {talonario.anio} · {talonario.estudiante.nombre}
             </div>
           </div>
         ))}

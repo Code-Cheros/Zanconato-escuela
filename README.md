@@ -1,4 +1,4 @@
-# 🏫 Complejo Educativo Católico Zaconato
+# 🏫 Complejo Educativo Católico Zanconato
 ## Sistema de Gestión Escolar — Documentación Completa
 
 ---
@@ -435,4 +435,4 @@ npx prisma generate  # Regenerar cliente Prisma
 
 ---
 
-*© 2024 Complejo Educativo Católico Zaconato — Sistema de Gestión Escolar*
+*© 2024 Complejo Educativo Católico Zanconato — Sistema de Gestión Escolar*

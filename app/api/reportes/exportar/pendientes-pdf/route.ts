@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
 <body>
   <div class="header">
     ${logoBase64 ? `<img src="${logoBase64}" alt="Logo" style="height:50px;object-fit:contain;margin-bottom:8px;" />` : ''}
-    <h1>Complejo Educativo Católico Zaconato</h1>
+    <h1>Complejo Educativo Católico Zanconato</h1>
     <h2>Reporte de Pagos Pendientes — Año ${anio}</h2>
   </div>
 
@@ -149,7 +149,7 @@ export async function GET(req: NextRequest) {
   </div>
 
   <div class="footer">
-    Sistema de Control de Pagos Zaconato — Este documento tiene carácter informativo de cobro interno.
+    Sistema de Control de Pagos Zanconato — Este documento tiene carácter informativo de cobro interno.
   </div>
 </body>
 </html>`

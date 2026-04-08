@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
 <body>
   <div class="header">
     ${logoBase64 ? `<img src="${logoBase64}" alt="Logo" style="height:56px;object-fit:contain;margin-bottom:10px;" />` : ''}
-    <h1>Complejo Educativo Católico Zaconato</h1>
+    <h1>Complejo Educativo Católico Zanconato</h1>
     <h2>${titulo}</h2>
   </div>
   <div class="meta">
@@ -170,7 +170,7 @@ export async function GET(req: NextRequest) {
   </div>
 
   <div class="footer">
-    <span>Complejo Educativo Católico Zaconato — Sistema de Gestión Escolar</span>
+    <span>Complejo Educativo Católico Zanconato — Sistema de Gestión Escolar</span>
     <span>Documento generado automáticamente</span>
   </div>
 </body>

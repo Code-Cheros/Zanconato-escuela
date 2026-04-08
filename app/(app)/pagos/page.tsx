@@ -566,90 +566,94 @@ export default function PagosPage() {
                 )}
 
                 {esTipoOtro && (
-                    <div className="sm:col-span-12 grid grid-cols-1 gap-4 sm:grid-cols-12 items-end border-y py-6 my-2 bg-muted/10 px-4 rounded-lg animate-in fade-in duration-300">
-                      <div className="sm:col-span-3 space-y-1.5 text-left">
-                        <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ml-0.5">Concepto / Nombre</Label>
-                        <div className="flex flex-col gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="w-full font-bold text-primary italic mb-1"
-                            onClick={() => {
-                              setShowNuevoConcepto(true)
-                              setSelectedTipoRapido('')
-                              setNuevoTipoPago('')
+                  <div className="sm:col-span-12 grid grid-cols-1 gap-4 sm:grid-cols-12 items-end border-y py-6 my-2 bg-muted/10 px-4 rounded-lg animate-in fade-in duration-300">
+                    <div className="sm:col-span-8 space-y-1.5 text-left">
+                      <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ml-0.5">
+                        Concepto / Nombre
+                      </Label>
+
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-10 px-3 font-bold text-primary italic sm:shrink-0"
+                          onClick={() => {
+                            setShowNuevoConcepto(true)
+                            setSelectedTipoRapido('')
+                            setNuevoTipoPago('')
+                          }}
+                        >
+                          + Registrar Nuevo
+                        </Button>
+
+                        {!showNuevoConcepto ? (
+                          <Select
+                            value={selectedTipoRapido}
+                            onValueChange={v => {
+                              setSelectedTipoRapido(v)
+                              setNuevoTipoPago(v)
                             }}
                           >
-                            + Registrar Nuevo
-                          </Button>
-                          {!showNuevoConcepto && (
-                            <Select 
-                              value={selectedTipoRapido}
-                              onValueChange={v => {
-                                setSelectedTipoRapido(v)
-                                setNuevoTipoPago(v)
+                            <SelectTrigger className="h-10 border-primary/20 bg-background/50 sm:flex-1">
+                              <SelectValue placeholder="Concepto..." />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-80">
+                              {todasLasSugerencias.map(t => (
+                                <SelectItem key={t} value={t}>
+                                  {t}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="grid grid-cols-1 gap-1.5 sm:flex-1">
+                            <Input
+                              value={nuevoTipoPago}
+                              onChange={e => setNuevoTipoPago(e.target.value)}
+                              placeholder="Nombre..."
+                              className="h-10 border-primary/30 focus-visible:ring-primary/20"
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 justify-start px-0 text-xs text-muted-foreground"
+                              onClick={() => {
+                                setShowNuevoConcepto(false)
+                                setNuevoTipoPago('')
                               }}
                             >
-                              <SelectTrigger className="h-10 border-primary/20 bg-background/50">
-                                <SelectValue placeholder="Concepto..." />
-                              </SelectTrigger>
-                              <SelectContent className="max-h-80">
-                                {todasLasSugerencias.map(t => (
-                                  <SelectItem key={t} value={t}>{t}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                          {showNuevoConcepto && (
-                            <div className="pt-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                              <Input
-                                value={nuevoTipoPago}
-                                onChange={e => setNuevoTipoPago(e.target.value)}
-                                placeholder="Nombre..."
-                                className="h-10 border-primary/30 focus-visible:ring-primary/20"
-                              />
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                className="mt-1 text-xs text-muted-foreground"
-                                onClick={() => {
-                                  setShowNuevoConcepto(false)
-                                  setNuevoTipoPago('')
-                                }}
-                              >Cancelar</Button>
-                            </div>
-                          )}
-                        </div>
+                              Cancelar
+                            </Button>
+                          </div>
+                        )}
                       </div>
-
-                      <div className="sm:col-span-2 space-y-1.5 text-left">
-                        <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ml-0.5">Monto</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={montoManual}
-                          onChange={e => setMontoManual(e.target.value)}
-                          placeholder="0.00"
-                          className="h-10 text-lg font-bold bg-background/50"
-                        />
-                      </div>
-
-                      <div className="sm:col-span-2 space-y-1.5 text-left">
-                        <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ml-0.5">Cant.</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={cantidadOtro}
-                          onChange={e => setCantidadOtro(e.target.value)}
-                          className="h-10 bg-background/50"
-                        />
-                      </div>
-                      
-                      {/* Even larger empty space to keep items tight on the left */}
-                      <div className="sm:col-span-5" />
                     </div>
+
+                    <div className="sm:col-span-2 space-y-1.5 text-left">
+                      <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ml-0.5">Monto</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={montoManual}
+                        onChange={e => setMontoManual(e.target.value)}
+                        placeholder="0.00"
+                        className="h-10 text-lg font-bold bg-background/50"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2 space-y-1.5 text-left">
+                      <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ml-0.5">Cant.</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={cantidadOtro}
+                        onChange={e => setCantidadOtro(e.target.value)}
+                        className="h-10 bg-background/50"
+                      />
+                    </div>
+                  </div>
                 )}
 
                 <div className="space-y-1.5 lg:col-span-2">

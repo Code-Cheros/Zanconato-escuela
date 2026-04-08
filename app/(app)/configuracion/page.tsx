@@ -42,6 +42,7 @@ export default function ConfiguracionPage() {
 
   const [historial, setHistorial] = useState<any[]>([])
   const [loadingHistorial, setLoadingHistorial] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
 
   const fetchHistorial = async () => {
     setLoadingHistorial(true)
@@ -142,7 +143,6 @@ export default function ConfiguracionPage() {
     )
   }
 
-  const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 10
 
   const totalItems = historial.length

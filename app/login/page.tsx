@@ -52,7 +52,7 @@ export default function LoginPage() {
             <BookOpen className="w-10 h-10 text-blue-700" />
           </div>
           <h1 className="text-2xl font-bold text-white">Complejo Educativo</h1>
-          <h2 className="text-xl font-semibold text-blue-200">Católico Zaconato</h2>
+          <h2 className="text-xl font-semibold text-blue-200">Católico Zanconato</h2>
           <p className="text-blue-300 text-sm mt-1">Sistema de Gestión Escolar</p>
         </div>
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  placeholder="correo@zaconato.edu.sv"
+                  placeholder="correo@zanconato.edu.sv"
                   required
                 />
               </div>
@@ -125,7 +125,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-blue-300 text-xs mt-6">
-          © {new Date().getFullYear()} Complejo Educativo Católico Zaconato
+          © {new Date().getFullYear()} Complejo Educativo Católico Zanconato
         </p>
       </div>
     </div>

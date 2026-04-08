@@ -43,7 +43,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
           ) : (
             <GraduationCap className="size-4 text-primary" />
           )}
-          <span className="font-medium">Complejo Educativo Católico Zaconato</span>
+          <span className="font-medium">Complejo Educativo Católico Zanconato</span>
         </div>
         <Avatar>
           <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">

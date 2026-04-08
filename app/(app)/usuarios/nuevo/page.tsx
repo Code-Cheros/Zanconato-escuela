@@ -125,7 +125,7 @@ export default function NuevoUsuarioPage() {
                         type="email"
                         value={form.email}
                         onChange={handleChange}
-                        placeholder="usuario@zaconato.edu.sv"
+                        placeholder="usuario@zanconato.edu.sv"
                         required
                       />
                     </div>

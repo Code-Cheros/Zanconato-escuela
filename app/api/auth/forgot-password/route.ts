@@ -39,13 +39,13 @@ export async function POST(req: NextRequest) {
     const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`
 
     await transporter.sendMail({
-      from: `"Zaconato Escuela" <${process.env.GMAIL_USER}>`,
+      from: `"Zanconato Escuela" <${process.env.GMAIL_USER}>`,
       to: email,
-      subject: 'Recuperación de Contraseña - Zaconato',
+      subject: 'Recuperación de Contraseña - Zanconato',
       html: `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;border:1px solid #e2e8f0;border-radius:12px">
           <h2 style="color:#1d4ed8;margin-bottom:8px">Recuperación de Contraseña</h2>
-          <p style="color:#374151">Has solicitado restablecer tu contraseña en el Sistema de Gestión Escolar <strong>Zaconato</strong>.</p>
+          <p style="color:#374151">Has solicitado restablecer tu contraseña en el Sistema de Gestión Escolar <strong>Zanconato</strong>.</p>
           <p style="color:#374151">Haz clic en el botón a continuación. El enlace expirará en <strong>1 hora</strong>.</p>
           <div style="text-align:center;margin:32px 0">
             <a href="${resetUrl}"
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
           <p style="color:#9ca3af;font-size:12px">Si no solicitaste este cambio, puedes ignorar este correo.</p>
           <hr style="border:0;border-top:1px solid #e5e7eb;margin:20px 0"/>
           <p style="text-align:center;color:#d1d5db;font-size:11px">
-            © ${new Date().getFullYear()} Complejo Educativo Católico Zaconato
+            © ${new Date().getFullYear()} Complejo Educativo Católico Zanconato
           </p>
         </div>
       `,

@@ -33,7 +33,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     ...pago,
     registrador,
     colegio: {
-      nombre: 'Complejo Educativo Católico Zaconato',
+      nombre: 'Complejo Educativo Católico Zanconato',
       logoUrl: config?.logoUrl || null,
     },
   })

@@ -916,7 +916,7 @@ export default function NuevoEstudiantePage() {
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-primary dark:text-white">
                   <p className="font-medium mb-1">Al guardar se generará automáticamente:</p>
                   <ul className="space-y-1 text-xs text-primary dark:text-white">
-                    <li>• Usuario temporal con email: estudiante.{form.nie?.toLowerCase() || 'nie'}@zaconato.edu.sv</li>
+                    <li>• Usuario temporal con email: estudiante.{form.nie?.toLowerCase() || 'nie'}@zanconato.edu.sv</li>
                     <li>• Talonario del año {new Date().getFullYear()} con todos los comprobantes</li>
                     <li>• Comprobantes: Matrícula, Papelería, 10 Colegiaturas, 10 Alimentaciones</li>
                   </ul>

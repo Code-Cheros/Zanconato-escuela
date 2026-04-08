@@ -1,7 +1,7 @@
 // components/layout/Sidebar.tsx
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
@@ -57,6 +57,7 @@ export default function Sidebar() {
   const { setOpenMobile } = useSidebar()
   const user = session?.user as SessionUser | undefined
   const rol = user?.rol
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
 
   const visibleItems = navItems.filter(item => item.roles.includes(rol ?? ''))
 
@@ -64,16 +65,31 @@ export default function Sidebar() {
     setOpenMobile(false)
   }, [pathname, setOpenMobile])
 
+  useEffect(() => {
+    let mounted = true
+    fetch('/api/configuracion', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (mounted) setLogoUrl(d?.logoUrl || null)
+      })
+      .catch(() => {})
+    return () => { mounted = false }
+  }, [])
+
   return (
     <SidebarRoot collapsible="offcanvas" variant="floating">
       <SidebarHeader className="border-b border-sidebar-border px-3 py-4">
         <div className="flex items-center gap-3 px-1">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <GraduationCap className="size-5" />
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg">
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo institucional" className="size-10 object-contain" />
+            ) : (
+              <GraduationCap className="size-7 text-primary" />
+            )}
           </div>
           <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
             <p className="truncate text-xs font-bold">C.E.C.</p>
-            <p className="truncate text-xs text-muted-foreground leading-tight">Zaconato</p>
+            <p className="truncate text-xs text-muted-foreground leading-tight">Zanconato</p>
           </div>
         </div>
       </SidebarHeader>

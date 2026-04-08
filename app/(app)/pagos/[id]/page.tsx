@@ -133,7 +133,7 @@ export default function PagoDetallePage() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Colegio</p>
-                  <p className="text-sm font-medium">{pago.colegio?.nombre || 'Complejo Educativo Católico Zaconato'}</p>
+                  <p className="text-sm font-medium">{pago.colegio?.nombre || 'Complejo Educativo Católico Zanconato'}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Fecha de registro</p>
