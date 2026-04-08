@@ -122,7 +122,9 @@ export default function PagosPage() {
   const [selectedTipoPago, setSelectedTipoPago] = useState('')
   const [nuevoTipoPago, setNuevoTipoPago] = useState('')
   const [cantidadOtro, setCantidadOtro] = useState('1')
+  // Estado para mostrar el input de nuevo concepto
   const [selectedTipoRapido, setSelectedTipoRapido] = useState('')
+  const [showNuevoConcepto, setShowNuevoConcepto] = useState(false)
   const [montoManual, setMontoManual] = useState('')
   const [notas, setNotas] = useState('')
   const [savingPago, setSavingPago] = useState(false)
@@ -567,36 +569,59 @@ export default function PagosPage() {
                     <div className="sm:col-span-12 grid grid-cols-1 gap-4 sm:grid-cols-12 items-end border-y py-6 my-2 bg-muted/10 px-4 rounded-lg animate-in fade-in duration-300">
                       <div className="sm:col-span-3 space-y-1.5 text-left">
                         <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ml-0.5">Concepto / Nombre</Label>
-                        <Select 
-                          value={selectedTipoRapido || 'manual'} 
-                          onValueChange={v => {
-                            setSelectedTipoRapido(v)
-                            if (v !== 'manual') setNuevoTipoPago(v)
-                            else setNuevoTipoPago('')
-                          }}
-                        >
-                          <SelectTrigger className="h-10 border-primary/20 bg-background/50">
-                            <SelectValue placeholder="Concepto..." />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-80">
-                            <SelectItem value="manual" className="font-bold text-primary italic">+ Registrar Nuevo</SelectItem>
-                            <Separator className="my-1" />
-                            {todasLasSugerencias.map(t => (
-                              <SelectItem key={t} value={t}>{t}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        {selectedTipoRapido === 'manual' && (
-                          <div className="pt-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                            <Input
-                              value={nuevoTipoPago}
-                              onChange={e => setNuevoTipoPago(e.target.value)}
-                              placeholder="Nombre..."
-                              className="h-10 border-primary/30 focus-visible:ring-primary/20"
-                            />
-                          </div>
-                        )}
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full font-bold text-primary italic mb-1"
+                            onClick={() => {
+                              setShowNuevoConcepto(true)
+                              setSelectedTipoRapido('')
+                              setNuevoTipoPago('')
+                            }}
+                          >
+                            + Registrar Nuevo
+                          </Button>
+                          {!showNuevoConcepto && (
+                            <Select 
+                              value={selectedTipoRapido}
+                              onValueChange={v => {
+                                setSelectedTipoRapido(v)
+                                setNuevoTipoPago(v)
+                              }}
+                            >
+                              <SelectTrigger className="h-10 border-primary/20 bg-background/50">
+                                <SelectValue placeholder="Concepto..." />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-80">
+                                {todasLasSugerencias.map(t => (
+                                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          {showNuevoConcepto && (
+                            <div className="pt-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                              <Input
+                                value={nuevoTipoPago}
+                                onChange={e => setNuevoTipoPago(e.target.value)}
+                                placeholder="Nombre..."
+                                className="h-10 border-primary/30 focus-visible:ring-primary/20"
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="mt-1 text-xs text-muted-foreground"
+                                onClick={() => {
+                                  setShowNuevoConcepto(false)
+                                  setNuevoTipoPago('')
+                                }}
+                              >Cancelar</Button>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <div className="sm:col-span-2 space-y-1.5 text-left">
